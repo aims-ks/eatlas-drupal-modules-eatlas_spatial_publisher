@@ -186,7 +186,7 @@ class EAtlas_spatial_publisher_template_context {
 					$node_url = $node->field_ea_rss_link[LANGUAGE_NONE][0]['value'];
 				}
 			} else {
-				$node_url = url('node/'. $node->nid);
+				$node_url = url('node/'. $node->nid, array('query' => array('featureId' => $this->feature['id'])));
 			}
 
 			// Preview image
