@@ -1,0 +1,767 @@
+<?php
+
+// Constants shared across files
+// (the ".include" file doesn't load the module file,
+// so the constants can't be defined in this file)
+include_once('eatlas_spatial_publisher.constants.inc');
+
+// Add region_set admin file because it define the region_set content type,
+// this needs to be define in the module file
+// (but conceptually it belong in the region_set file)
+include_once('eatlas_spatial_publisher.region_set.admin.inc');
+
+// Required to create the table of CSV files in site settings
+include_once('eatlas_spatial_publisher.extra_csv.admin.inc');
+
+include_once('eatlas_spatial_publisher.map_block.inc');
+
+/**
+ * Structure of this module:
+ *
+ * eAtlas Spatial Publisher
+ * |   Type: Drupal module (this one) + Taxonomy vocabulary (eatlas_spatial_publisher)
+ * |
+ * \-- Spatial Publisher site
+ *     |   Type: 1st level taxonomy term + DB table (eatlas_spatial_publisher_site)
+ *     |   Example: "eatlas", "ts", "nwa", "ampsa"
+ *     |
+ *     \-- Spatial Publisher region set
+ *         |   Type: Node (eatlas_spatial_publisher_region_set)
+ *         |   Data: 2nd level taxonomy term
+ *         |   Example: "world" (eAtlas), "shoals" (NWA), "network" (AMPSA)
+ *         |   NOTE: The Node has a parent field which refer to nodes of the same content type, which are filed under the same Spatial Publisher site
+ *         |
+ *         \-- Spatial Publisher region
+ *                 Type: DB table (eatlas_spatial_publisher_region)
+ *                 Data: 3nd level taxonomy term
+ * 
+ * Example:
+ *
+ * Australian Marine Parks Science Atlas (AMPSA)
+ *
+ *   STRUCTURE
+ *     ampsa                      (Spatial Publisher site)
+ *       network                  (Spatial Publisher region set)
+ *         zone                   (Spatial Publisher region set)
+ *
+ *   DATA (from GeoJSON + CSV)
+ *     Coral Sea                  (Spatial Publisher region - network)
+ *       AU_DotE_Comm-2014.165    (Spatial Publisher region - zone)
+ *       AU_DotE_Comm-2014.170    (Spatial Publisher region - zone)
+ *       ...
+ *     Temperate East             (Spatial Publisher region - network)
+ *       AU_DotE_Comm-2014.125    (Spatial Publisher region - zone)
+ *       AU_DotE_Comm-2014.126    (Spatial Publisher region - zone)
+ *       ...
+ *
+ * eAtlas
+ *
+ *   STRUCTURE
+ *     eatlas                     (Spatial Publisher site)
+ *       country                  (Spatial Publisher region set)
+ *         state                  (Spatial Publisher region set)
+ *           city                 (Spatial Publisher region set)
+ *
+ *   DATA (from GeoJSON + CSV)
+ *     australia                  (Spatial Publisher region - country)
+ *       qld                      (Spatial Publisher region - state)
+ *         cairns                 (Spatial Publisher region - city)
+ *         townsville             (Spatial Publisher region - city)
+ *       northern-territories     (Spatial Publisher region - state)
+ *         darwin                 (Spatial Publisher region - city)
+ *       west-australia           (Spatial Publisher region - state)
+ *         perth                  (Spatial Publisher region - city)
+ */
+
+/**
+ * Implements: hook_permission().
+ * Module specific permissions listed in:
+ *   admin/people/permissions
+ * API doc:
+ *   https://api.drupal.org/api/drupal/modules%21system%21system.api.php/function/hook_permission/7.x
+ */
+function eatlas_spatial_publisher_permission() {
+	$taxonomy_requirements = 'Also require permission to <em>Administer vocabularies and terms</em> or ' .
+			'<em>Edit terms in Spatial Publisher</em> from the taxonomy module.';
+
+	$permissions = array(
+		'administer eatlas spatial publisher' => array(
+			'title' => t('Administer all sites'),
+			'description' => t('Permission to create, delete and modify any Spatial Publisher sites.<br/>' .
+					$taxonomy_requirements)
+		)
+	);
+
+	// Individual Permissions for each "site"
+	$site_terms = eatlas_spatial_publisher_site_load_terms();
+	foreach ($site_terms as $site_term) {
+		$permissions["administer eatlas spatial publisher site $site_term->tid"] = array(
+			'title' => t('Administer site %site', array('%site' => $site_term->name)),
+			'description' => t('Permission to modify the Spatial Publisher site %site. ' .
+					'This doesn\'t grant delete privilege on the site.<br/>' .
+					$taxonomy_requirements,
+					array('%site' => $site_term->name))
+		);
+	}
+
+	return $permissions;
+}
+
+
+function _eatlas_spatial_publisher_sites_view_access() {
+	$publisher_vocabulary = taxonomy_vocabulary_machine_name_load(EATLAS_SPATIAL_PUBLISHER_VOCABULARY);
+	// In case the whole vocabulary was manually deleted
+	if (!$publisher_vocabulary) {
+		return FALSE;
+	}
+	$vid = $publisher_vocabulary->vid;
+
+	return user_access("edit terms in $vid") || user_access('administer taxonomy');
+}
+
+// Create and delete
+function _eatlas_spatial_publisher_sites_admin_access() {
+	$publisher_vocabulary = taxonomy_vocabulary_machine_name_load(EATLAS_SPATIAL_PUBLISHER_VOCABULARY);
+	// In case the whole vocabulary was manually deleted
+	if (!$publisher_vocabulary) {
+		return FALSE;
+	}
+	$vid = $publisher_vocabulary->vid;
+
+	return user_access('administer eatlas spatial publisher') && 
+		(user_access("edit terms in $vid") || user_access('administer taxonomy'));
+}
+
+function _eatlas_spatial_publisher_site_edit_access(stdClass $taxonomy_term) {
+	$tid = $taxonomy_term->tid;
+	$publisher_vocabulary = taxonomy_vocabulary_machine_name_load(EATLAS_SPATIAL_PUBLISHER_VOCABULARY);
+	// In case the whole vocabulary was manually deleted
+	if (!$publisher_vocabulary) {
+		return FALSE;
+	}
+	$vid = $publisher_vocabulary->vid;
+
+	return (user_access("administer eatlas spatial publisher site $tid") || user_access('administer eatlas spatial publisher')) && 
+		(user_access("edit terms in $vid") || user_access('administer taxonomy'));
+}
+
+
+/**
+ * Implements: hook_menu().
+ * Module configuration
+ */
+function eatlas_spatial_publisher_menu() {
+	$items = array();
+
+	// Service which deliver the node's GeoJSON file merged with the CSV metadata.
+	$items['eatlas_spatial_publisher/%node/geojson'] = array(
+		'page callback' => '_eatlas_spatial_publisher_regions_set_get_geojson', // Name of the function to call
+		'page arguments' => array(1), // The parameter "node" loaded with "node_load"
+		'access callback' => 'node_access', // Access granted if node can be viewed
+		'access arguments' => array('view', 1),
+		'file' => 'eatlas_spatial_publisher.region_set.admin.inc'
+	);
+
+	// Service which deliver a GeoJSON feature page (template with replaced with content)
+	$items['eatlas_spatial_publisher/%node/feature/%'] = array(
+		'page callback' => '_eatlas_spatial_publisher_regions_set_get_feature_template', // Name of the function to call
+		'page arguments' => array(1, 3), // The parameter "node" loaded with "node_load" and the feature ID
+		'access callback' => 'node_access', // Access granted if node can be viewed
+		'access arguments' => array('view', 1),
+		'file' => 'eatlas_spatial_publisher.region_set.admin.inc'
+	);
+
+	// NOTE: admin/config/eatlas is defined in "eatlas_commons"
+
+	// Overview
+	// List all eatlas_spatial_publisher sites
+	$items['admin/config/eatlas/eatlas_spatial_publisher'] = array(
+		'title' => 'Spatial Publisher settings',
+		'description' => 'eAtlas Spatial Publisher module settings',
+		'page callback' => '_eatlas_spatial_publisher_overview',
+
+		'access callback' => '_eatlas_spatial_publisher_sites_view_access',
+
+		'file' => 'eatlas_spatial_publisher.site.admin.inc'
+	);
+	$items['admin/config/eatlas/eatlas_spatial_publisher/add'] = array(
+		// NOTE: The title doesn't show on the page. It's a known bug related to MENU_LOCAL_ACTION:
+		//   https://www.drupal.org/node/891892
+		'title' => 'Add a Spatial Publisher site',
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('_eatlas_spatial_publisher_site_form'),
+
+		'access callback' => '_eatlas_spatial_publisher_sites_admin_access',
+
+		'type' => MENU_LOCAL_ACTION,
+		'file' => 'eatlas_spatial_publisher.site.admin.inc'
+	);
+
+	// Edit one Spatial Publisher site
+	$items['admin/config/eatlas/eatlas_spatial_publisher/%taxonomy_term'] = array(
+		'title callback' => '_eatlas_spatial_publisher_site_title',
+		'title arguments' => array(4),
+		'description' => 'Edit Spatial Publisher site settings',
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('_eatlas_spatial_publisher_site_form', 4),
+
+		'access callback' => '_eatlas_spatial_publisher_site_edit_access',
+		'access arguments' => array(4),
+
+		'file' => 'eatlas_spatial_publisher.site.admin.inc'
+	);
+
+	// Edit region menu (contextual menu)
+	//   https://www.drupal.org/docs/7/administering-drupal-7-site/working-with-contextual-links
+	$items['admin/config/eatlas/eatlas_spatial_publisher/%taxonomy_term'] = array(
+		'title' => 'Edit region menu',
+		'type' => MENU_LOCAL_ACTION,
+		'context' => MENU_CONTEXT_INLINE,
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('_eatlas_spatial_publisher_site_form', 4),
+
+		'access callback' => '_eatlas_spatial_publisher_site_edit_access',
+		'access arguments' => array(4),
+
+		'file' => 'eatlas_spatial_publisher.site.admin.inc'
+	);
+
+	// Add a region set
+	$items['admin/config/eatlas/eatlas_spatial_publisher/%taxonomy_term/add'] = array(
+		// NOTE: The page title doesn't show on the page. It's a known bug related to MENU_LOCAL_ACTION:
+		//   https://www.drupal.org/node/891892
+		'title' => 'Add a region set',
+		'page callback' => '_eatlas_spatial_publisher_add_region_set',
+		'page arguments' => array(4),
+		'access callback' => '_eatlas_spatial_publisher_site_edit_access',
+		'access arguments' => array(4),
+		'type' => MENU_LOCAL_ACTION,
+		'file' => 'eatlas_spatial_publisher.region_set.admin.inc'
+	);
+
+	// Add a supplementary CSV file
+	$items['admin/config/eatlas/eatlas_spatial_publisher/%taxonomy_term/extra_csv/add'] = array(
+		// NOTE: The page title doesn't show on the page. It's a known bug related to MENU_LOCAL_ACTION:
+		//   https://www.drupal.org/node/891892
+		'title' => 'Add a supplementary CSV file',
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('_eatlas_spatial_publisher_extra_csv_form', 4),
+
+		'access callback' => '_eatlas_spatial_publisher_site_edit_access',
+		'access arguments' => array(4),
+
+		'type' => MENU_LOCAL_ACTION,
+		'file' => 'eatlas_spatial_publisher.extra_csv.admin.inc'
+	);
+
+	// Edit a supplementary CSV file
+	$items['admin/config/eatlas/eatlas_spatial_publisher/%taxonomy_term/extra_csv/%/edit'] = array(
+		// NOTE: The page title doesn't show on the page. It's a known bug related to MENU_LOCAL_ACTION:
+		//   https://www.drupal.org/node/891892
+		'title' => 'Edit a supplementary CSV file',
+		'page callback' => 'drupal_get_form',
+		'page arguments' => array('_eatlas_spatial_publisher_extra_csv_form', 4, 6),
+
+		'access callback' => '_eatlas_spatial_publisher_site_edit_access',
+		'access arguments' => array(4),
+
+		'type' => MENU_LOCAL_ACTION,
+		'context' => MENU_CONTEXT_INLINE,
+		'file' => 'eatlas_spatial_publisher.extra_csv.admin.inc'
+	);
+
+	return $items;
+}
+
+/**
+ * Implements hook_block_view_alter(&$data, $block).
+ * Alter selected menu blocks (the one selected in the region_menus field)
+ *   to add the region sub-menu at index 0.
+ * NOTE: This "hook" will alter the menu when it's displayed,
+ *   it won't alter the menu permanently.
+ */
+function eatlas_spatial_publisher_block_view_alter(&$data, $block) {
+	// Check if the block has a "delta"
+	//   NOTE: For menus, the delta is the menu_name
+	// Also check if the data has some content
+	//   NOTE: That's where the menu structure is stored
+	if (property_exists($block, 'delta') && $block->delta &&
+			isset($data['content']) && $data['content']) {
+
+		// Check if the block delta match a selected menu
+		// I.E. If the block is a menu that was selected in the region_menus field of a site.
+		$site_terms = eatlas_spatial_publisher_site_load_terms();
+		$site = NULL;
+		$block_is_selected = FALSE;
+		foreach ($site_terms as $site_term) {
+			$site = eatlas_spatial_publisher_site_load($site_term->tid);
+			if (property_exists($site, 'region_menus')) {
+				if (in_array($block->delta, $site->region_menus)) {
+					$block_is_selected = TRUE;
+					break;
+				}
+			}
+		}
+
+		if ($block_is_selected && $site) {
+			// Create the menu items representing the regions sub menu
+			$mlid = 'eatlas_publisher_menu_site_' . $site->tid;
+			$menu_item = array(
+				$mlid => array(
+					'link' => array(
+						'menu_name' => $block->delta,
+						'access' => TRUE,
+						'hidden' => FALSE,
+						'in_active_trail' => FALSE, // TODO Need URL addressability
+						'mlid' => $mlid,
+						'plid' => 0,
+						'href' => 'amps', // TODO Find website home page
+						'title' => $site->taxonomy_term->name,
+						'has_children' => TRUE,
+						'expanded' => TRUE,
+						'weight' => 0
+					),
+					'below' => eAtlas_spatial_publisher_regions_site_menu_tree_page_data($block->delta, $site->tid, NULL, $mlid)
+				)
+			);
+
+			// Add a contextual link menu (element in the "cog" menu)
+			//   to edit the region menu
+			$data['content']['#contextual_links']['eatlas_spatial_publisher'] = array(
+				'admin/config/eatlas/eatlas_spatial_publisher', array($site->tid)
+			);
+
+			// Make a renderable item from the menu item
+			// (the menu found in $data is a renderable array)
+			$menu_item_output = menu_tree_output($menu_item);
+
+			// Add a CSS class to help applying a custom style to the region sub-menu
+			$menu_item_output[$mlid]['#attributes']['class'][] = 'eAtlas_spatial_publisher_menu';
+
+			// Add the region sub-menu to the menu
+			$data['content'][$mlid] = $menu_item_output[$mlid];
+
+			// Sort the renderable array to put the region menu item where it belong
+			uasort($data['content'], function($a, $b) {
+				// Move the functional item (such as #contextual_links, #theme_wrappers, etc) to the end of the list
+				if (!isset($a['#original_link'])) {
+					return 1;
+				}
+				if (!isset($b['#original_link'])) {
+					return -1;
+				}
+				// Order menu items by weight
+				return $a['#original_link']['weight'] - $b['#original_link']['weight'];
+			});
+
+			// Fix the "first" and "last" classes (first menu level)
+			// NOTE: They are likely to be wrong since we added an element after its creation.
+			$first_menu_item = NULL;
+			$last_menu_item = NULL;
+			foreach($data['content'] as $mlid => &$menu_item) {
+				if (isset($menu_item['#attributes']['class'])) {
+					// Keep track of the first / last menu item
+					// NOTE: The renderable array contains metadata items such as '#theme_wrappers', '#sorted', etc.
+					//   Those should be ignored in this context (they aren't menu items).
+					if ($first_menu_item === NULL) {
+						$first_menu_item = &$menu_item;
+					}
+					$last_menu_item = &$menu_item;
+
+					// Remove "first" and "last" classes for all 1st level menu items
+					$menu_item['#attributes']['class'] = array_values(array_diff($menu_item['#attributes']['class'], array('first', 'last')));
+				}
+			}
+			// Re-add the "first" / "last" classes to the first / last menu item.
+			$first_menu_item['#attributes']['class'][] = 'first';
+			$last_menu_item['#attributes']['class'][] = 'last';
+		}
+	}
+}
+
+/**
+ * Implements hook_help().
+ */
+function eatlas_spatial_publisher_help($path, $arg) {
+	switch ($path) {
+		case 'admin/config/eatlas/eatlas_spatial_publisher':
+			$output = '<p>' . t('Spatial Publisher sites are used to navigate through ' .
+					'the website using a map. Each nodes in Drupal has to be associated ' .
+					'with at least one Spatial Publisher region to appear in one of the ' .
+					'eAtlas web site.') . '</p>';
+			return $output;
+	}
+
+	return NULL;
+}
+
+function eatlas_spatial_publisher_save_taxonomy_term($values) {
+	$term = NULL;
+	$dirty = FALSE;
+
+	if (isset($values['tid'])) {
+		// Update
+		$term = taxonomy_term_load($values['tid']);
+
+		if ($term->name !== $values['name']) {
+			$term->name = $values['name'];
+			$dirty = TRUE;
+		}
+
+	} else {
+		// Insert
+		$publisher_vocabulary = taxonomy_vocabulary_machine_name_load(EATLAS_SPATIAL_PUBLISHER_VOCABULARY);
+
+		$term = (object)array(
+			'vid' => $publisher_vocabulary->vid,
+			'name' => $values['name']
+		);
+		if (isset($values['parent'])) {
+			$term->parent = $values['parent']; // Parent term ID
+		}
+
+		$dirty = TRUE;
+	}
+
+	if ($dirty) {
+		taxonomy_term_save($term);
+	}
+
+	return $term->tid;
+}
+
+/**
+ * Inspired from:
+ *   taxonomy.admin.inc: taxonomy_term_confirm_delete_submit
+ */
+function eatlas_spatial_publisher_delete_taxonomy_term($tid) {
+	$publisher_vocabulary = taxonomy_vocabulary_machine_name_load(EATLAS_SPATIAL_PUBLISHER_VOCABULARY);
+	$term = taxonomy_term_load($tid);
+	if ($term->vid === $publisher_vocabulary->vid) {
+		$term_name = $term->name;
+
+		taxonomy_term_delete($tid);
+		taxonomy_check_vocabulary_hierarchy($publisher_vocabulary, (array)$term);
+
+		drupal_set_message(t('Deleted taxonomy term %name.', array('%name' => $term_name)));
+		watchdog('eatlas_spatial_publisher', 'Deleted taxonomy term %name.', array('%name' => $term_name), WATCHDOG_NOTICE);
+
+		cache_clear_all();
+	}
+}
+
+/**
+ * Implements hook_taxonomy_term_delete().
+ *   https://api.drupal.org/api/drupal/modules%21taxonomy%21taxonomy.api.php/function/hook_taxonomy_term_delete/7.x
+ *
+ * Listen for taxonomy term deletion.
+ * When a term associated with this module is deleted,
+ *   this function delete its metadata.
+ * NOTE: This module rely on taxonomy delete behaviour which
+ *   cascade delete its children. The listener will be called for
+ *   each deleted children.
+ */
+function eatlas_spatial_publisher_taxonomy_term_delete($term) {
+	$publisher_vocabulary = taxonomy_vocabulary_machine_name_load(EATLAS_SPATIAL_PUBLISHER_VOCABULARY);
+	if ($term->vid === $publisher_vocabulary->vid) {
+		$tid = $term->tid;
+		// A term related to this module was deleted.
+		// We need to delete it's associated metadata.
+		eatlas_spatial_publisher_site_delete($tid);
+	}
+}
+
+function eatlas_spatial_publisher_fix_csv_file($fid) {
+	if ($fid) {
+		// Load the Drupal file object associated with the file ID
+		$csv_file = file_load($fid);
+
+		if ($csv_file && property_exists($csv_file, 'uri')) {
+			$file_uri = $csv_file->uri;
+			if ($file_uri && file_exists($file_uri)) {
+				// Load the file content
+				$csv_content = file_get_contents($file_uri);
+				// Convert to UTF-8 (assuming the file is in UTF-8, Windows-1252 or Macintosh encoding)
+				$csv_content_utf8 = eatlas_commons_fix_encoding($csv_content);
+				// Convert to ASCII - Ms Excel can't even handle its own encodings
+				$csv_content_ascii = eatlas_commons_convert_csv_utf8_to_ascii($csv_content_utf8);
+				// Save back to file so next time someone download the file, he will be able to load it in Ms Excel.
+				file_put_contents($file_uri, $csv_content_ascii);
+			}
+		}
+	}
+}
+
+/********************************
+ **** Spatial Publisher site ****
+ ********************************/
+
+
+
+function eatlas_spatial_publisher_site_load_terms() {
+	$publisher_vocabulary = taxonomy_vocabulary_machine_name_load(EATLAS_SPATIAL_PUBLISHER_VOCABULARY);
+	if (!$publisher_vocabulary) {
+		return NULL;
+	}
+
+	// https://api.drupal.org/api/drupal/modules!taxonomy!taxonomy.module/function/taxonomy_get_tree/7.x
+	return taxonomy_get_tree($publisher_vocabulary->vid, 0, 1);
+}
+
+
+/**
+ * Follow the convention of node_load.
+ * $tid: The taxonomy term ID.
+ * https://api.drupal.org/api/drupal/modules%21node%21node.module/function/node_load/7
+ */
+function eatlas_spatial_publisher_site_load($tid) {
+	if ($tid === NULL) {
+		return new stdClass();
+	}
+
+	// DB Select using the Drupal objects
+	// https://api.drupal.org/api/drupal/includes!database!database.inc/function/db_select/7
+	$query = db_select(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'ps')
+		->fields('ps')
+		->condition('ps.tid', $tid, '=');
+	$result = $query->execute();
+	$data = $result->fetch();
+
+	if (!$data) {
+		return new stdClass();
+	}
+
+	$data->taxonomy_term = taxonomy_term_load($tid);
+
+	// Load region_menus
+	$data->region_menus = array();
+	$menu_query = db_select(EATLAS_SPATIAL_PUBLISHER_DB_MENU_TABLE, 'm')
+		->fields('m')
+		->condition('m.tid', $tid, '=');
+	$menu_result = $menu_query->execute();
+	while ($menu_data = $menu_result->fetch()) {
+		$data->region_menus[] = $menu_data->menu_name;
+	}
+
+	return $data;
+}
+
+/**
+ * Follow the convention of node_save.
+ * $publisher_site: The $publisher_site object to be saved.
+ * https://api.drupal.org/api/drupal/modules%21node%21node.module/function/node_save/7
+ */
+function eatlas_spatial_publisher_site_save($publisher_site) {
+	// Transform the publisher_site object as an Array to be sent to the DB.
+	$publisher_site_fields = (array)$publisher_site;
+
+	$tid = eatlas_spatial_publisher_save_taxonomy_term($publisher_site_fields);
+	$current_values = eatlas_spatial_publisher_site_load($tid);
+
+	$region_menus = $publisher_site_fields['region_menus'];
+
+	// This value is saved in the taxonomy term
+	unset($publisher_site_fields['taxonomy_term']);
+	unset($publisher_site_fields['name']);
+	unset($publisher_site_fields['region_menus']);
+
+	$exists = db_query('SELECT 1 FROM {'.EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE.'} WHERE tid = :tid', array(':tid' => $tid))->fetchField();
+	if ($exists === FALSE) {
+		$publisher_site_fields['tid'] = $tid;
+
+		// Insert
+		// https://api.drupal.org/api/drupal/includes%21database%21query.inc/function/InsertQuery%3A%3Aexecute/7
+		db_insert(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE)->fields($publisher_site_fields)->execute();
+	} else {
+		// TID is used in the "WHERE" clause, not in the values.
+		unset($publisher_site_fields['tid']);
+
+		// Update
+		db_update(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE)->fields($publisher_site_fields)->condition('tid', $tid)->execute();
+	}
+
+	// Save selected menus
+	$current_region_menus = $current_values->region_menus;
+	// 1. Delete current entries that are not in the new set
+	foreach($current_region_menus as $current_region_menu) {
+		if ($current_region_menu && !isset($region_menus[$current_region_menu])) {
+			db_delete(EATLAS_SPATIAL_PUBLISHER_DB_MENU_TABLE)
+					->condition('tid', $tid)
+					->condition('menu_name', $current_region_menu)
+					->execute();
+		}
+	}
+	// 2. Insert new entries that are not in the current set
+	if (!empty($region_menus)) {
+		foreach($region_menus as $region_menu_name => $region_menu_value) {
+			if ($region_menu_name && !in_array($region_menu_name, $current_region_menus)) {
+				db_insert(EATLAS_SPATIAL_PUBLISHER_DB_MENU_TABLE)->fields(array(
+					'tid' => $tid,
+					'menu_name' => $region_menu_name
+				))->execute();
+			}
+		}
+	}
+}
+
+// Event listener callback function
+function eatlas_spatial_publisher_site_delete($publisher_site_tid) {
+	// Delete region sets
+	$region_sets = eatlas_spatial_publisher_region_set_load_all($publisher_site_tid);
+	foreach($region_sets as $region_set) {
+		node_delete($region_set->nid);
+	}
+
+	// https://api.drupal.org/api/drupal/includes%21database%21database.inc/function/db_delete/7.x
+	db_delete(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE)->condition('tid', $publisher_site_tid)->execute();
+	db_delete(EATLAS_SPATIAL_PUBLISHER_DB_MENU_TABLE)->condition('tid', $publisher_site_tid)->execute();
+}
+
+
+
+
+
+/**
+ * Implements hook_theme()
+ * Define a new template.
+ *     page__eatlas_publisher_region_set => templates/page--eatlas-publisher-region-set.tpl.php
+ *
+ * NOTES:
+ *   The template can be overwritten in the theme (in theory).
+ *   The template hook is manually set in eatlas_spatial_publisher_preprocess_page.
+ */
+function eatlas_spatial_publisher_theme() {
+	$templatesPath = drupal_get_path('module', 'eatlas_spatial_publisher') .'/templates';
+	return array(
+		// Module's page template are not automatically applied.
+		// It needs to be added to theme suggestions in hook_preprocess_page.
+		'page__eatlas_publisher_region_set' => array(
+			'template' => 'page--eatlas-publisher-region-set',
+			'path' => $templatesPath
+		),
+		// Module's node template are automatically applied
+		// (if the key and the file is named properly).
+		'node__eatlas_publisher_region_set' => array(
+			'template' => 'node--eatlas-publisher-region-set',
+			'path' => $templatesPath
+		)
+	);
+}
+
+/**
+ * Implements hook_preprocess_page()
+ * Add a theme hook suggestion to pick the module template when rendering
+ *   eatlas_publisher_region_set nodes.
+ * NOTE: Only apply the template when viewing the node (i.e. arg(2) is missing)
+ */
+function eatlas_spatial_publisher_preprocess_page(&$variables) {
+	if (isset($variables['node'])) {
+		$node = $variables['node'];
+		if (property_exists($node, 'type') && $node->type === 'eatlas_publisher_region_set') {
+			// Change the page template if in view mode
+			if (!arg(2)) {
+				$variables['theme_hook_suggestions'][] = 'page__eatlas_publisher_region_set';
+			}
+		}
+	}
+}
+
+
+/**
+ * PHP functions used to build the JavaScript layers tree.
+ * Used in:
+ *   templates/page--eatlas-publisher-region-set.tpl.php
+ *   eatlas_spatial_publisher.map_block.inc
+ *
+ * NOTE: The best way to prepare a string for JavaScript is to use JSON.
+ *   https://stackoverflow.com/questions/168214/pass-a-php-string-to-a-javascript-variable-and-escape-newlines
+ */
+function eatlas_spatial_publisher_get_layers_js_array($node) { 
+	// Get the url for the service which output the combined GeoJSON and CSV
+	$geoJSON_url = url("eatlas_spatial_publisher/$node->nid/geojson");
+
+	$style = NULL;
+	if (property_exists($node, 'field_eatlas_publisher_style') &&
+			isset($node->field_eatlas_publisher_style[LANGUAGE_NONE]) &&
+			isset($node->field_eatlas_publisher_style[LANGUAGE_NONE][0]) &&
+			isset($node->field_eatlas_publisher_style[LANGUAGE_NONE][0]['value'])) {
+		$style = $node->field_eatlas_publisher_style[LANGUAGE_NONE][0]['value'];
+	}
+
+	return "[\n" .
+		"	{\n" .
+		"		id: " . json_encode($node->nid) . ",\n" .
+		"		title: " . json_encode($node->title) . ",\n" .
+		"		url: " . json_encode($geoJSON_url) . ",\n" .
+		"		style: " . json_encode($style) . "\n" .
+		"	}" .
+		_eatlas_spatial_publisher_get_child_layers_js($node) . "\n" .
+		"]";
+}
+
+// Internal recursive function used to get children layers.
+function _eatlas_spatial_publisher_get_child_layers_js($parent_node) {
+	$child_layers_str = '';
+
+	$child_nodes = eatlas_spatial_publisher_region_set_load_children($parent_node);
+	if (!empty($child_nodes)) {
+		foreach ($child_nodes as $child_node) {
+			// Get the url for the service which output the combined GeoJSON and CSV
+			$child_url = url("eatlas_spatial_publisher/$child_node->nid/geojson");
+
+			$child_style = NULL;
+			if (property_exists($child_node, 'field_eatlas_publisher_style') &&
+					isset($child_node->field_eatlas_publisher_style[LANGUAGE_NONE]) &&
+					isset($child_node->field_eatlas_publisher_style[LANGUAGE_NONE][0]) &&
+					isset($child_node->field_eatlas_publisher_style[LANGUAGE_NONE][0]['value'])) {
+				$child_style = $child_node->field_eatlas_publisher_style[LANGUAGE_NONE][0]['value'];
+			}
+
+			$child_layers_str .=
+				", {\n" .
+				"		id: " . json_encode($child_node->nid) . ",\n" .
+				"		parentId: " . json_encode($parent_node->nid) . ",\n" .
+				"		title: " . json_encode($child_node->title) . ",\n" .
+				"		url: " . json_encode($child_url) . ",\n" .
+				"		style: " . json_encode($child_style) . "\n" .
+				"	}" .
+				_eatlas_spatial_publisher_get_child_layers_js($child_node);
+		}
+	}
+
+	return $child_layers_str;
+}
+
+function eatlas_spatial_publisher_get_initial_zoom_bbox($node) {
+	$bbox = NULL;
+
+	$tid = NULL;
+	if (property_exists($node, 'field_eatlas_publisher_tid') &&
+			isset($node->field_eatlas_publisher_tid[LANGUAGE_NONE]) &&
+			isset($node->field_eatlas_publisher_tid[LANGUAGE_NONE][0]) &&
+			isset($node->field_eatlas_publisher_tid[LANGUAGE_NONE][0]['value'])) {
+		$tid = $node->field_eatlas_publisher_tid[LANGUAGE_NONE][0]['value'];
+	}
+	if ($tid) {
+		$publisher_site = eatlas_spatial_publisher_site_load($tid);
+		if ($publisher_site) {
+			$north = $publisher_site->bbox_north;
+			$east = $publisher_site->bbox_east;
+			$south = $publisher_site->bbox_south;
+			$west = $publisher_site->bbox_west;
+
+			if ($north !== NULL && $east !== NULL && $south !== NULL && $west !== NULL) {
+				$bbox = array(
+					'north' => floatval($north),
+					'east'  => floatval($east),
+					'south' => floatval($south),
+					'west'  => floatval($west)
+				);
+			}
+		}
+	}
+
+	return json_encode($bbox);
+}
+
+?>

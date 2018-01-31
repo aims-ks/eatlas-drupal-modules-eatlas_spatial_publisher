@@ -1,0 +1,33 @@
+; $Id$
+name = eAtlas Spatial Publisher
+description = The Spatial Publisher is used to group documents under defined geographical regions. It also define regional sub-sites.
+core = 7.x
+
+files[] = eatlas_spatial_publisher.module
+
+stylesheets[all][] = css/eatlas_spatial_publisher.css
+scripts[] = js/eAtlas_spatial_publisher_collapsible_list.js
+scripts[] = js/eAtlas_spatial_publisher_back_to_top_button.js
+
+; OpenLayers
+stylesheets[all][] = ../../../libraries/openlayers/ol.css
+scripts[] = ../../../libraries/openlayers/ol.js
+
+; NOTE: OpenLayers require PolyFill added to the page header in order to work on broken web browsers (such as IE)
+;   Add the following line to your "html.tpl.php"
+;   <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
+
+; https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL
+
+package = eAtlas
+
+configure = admin/config/eatlas/eatlas_spatial_publisher
+
+dependencies[] = taxonomy
+dependencies[] = eatlas_commons (>=1.7)
+
+; Attributes used by the update module.
+; There fields needs to be removed if the module is migrated to Drupal.org
+project status url = "http://drupal.eatlas.org.au/modules/eatlas"
+version = "7.x-0.25"
+project = "eatlas_spatial_publisher"

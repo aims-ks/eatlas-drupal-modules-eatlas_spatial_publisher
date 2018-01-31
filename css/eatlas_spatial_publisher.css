@@ -1,0 +1,298 @@
+/**
+ * There is 3 types of map display:
+ *
+ * 1. Node render:
+ *   When a Region Set node is rendered, Drupal use the page + node templates defined in the module. The page template add an extra "navigation_map_node" that can be used to isolate that scenario.
+ *   .navigation_map_node .eatlas_spatial_publisher_map
+ *
+ * 2. Node preview:
+ *   .node-type-eatlas-publisher-region-set .preview .eatlas_spatial_publisher_map
+ *
+ * 3. Block render:
+ *   .block-eatlas-spatial-publisher .eatlas_spatial_publisher_map
+ */
+
+/* Make the top of the tabs part of the "navigation_map_node" div */
+.navigation_map_node {
+	overflow: auto;
+	background-color: #FFFFFF;
+}
+
+/* Display the admin "float" menu on top of the map */
+.navigation_map_node .sidebar_float {
+	z-index: 1000;
+	margin-top: 75px; /* Move the menu down to make room for the map zoom buttons */
+	overflow:auto;
+}
+
+.eatlas_spatial_publisher_map {
+	overflow: hidden;
+}
+
+.node-type-eatlas-publisher-region-set .preview .eatlas_spatial_publisher_map,
+.block-eatlas-spatial-publisher .eatlas_spatial_publisher_map {
+	border: 2px solid #CCCCCC;
+}
+
+.node-type-eatlas-publisher-region-set .preview .eatlas_spatial_publisher_map .map_container,
+.block-eatlas-spatial-publisher .eatlas_spatial_publisher_map .map_container {
+	height: 600px;
+	/*
+	 * Max height at 70% of the view port.
+	 * Setting it to "70%" would be 70% of the body height.
+	 * The unit "vh" represent the percentage of the view port height.
+	 * Those units are well supported (IE and Edge has some issues as usual):
+	 *   http://caniuse.com/#feat=viewport-units
+	 */
+	max-height: 70vh;
+}
+
+.eatlas_spatial_publisher_map .map_container {
+	position: relative;
+}
+
+/* Place the Google logo on the map */
+.eatlas_spatial_publisher_map .map_container .map {
+	/* Reference for the logo position:absolute */
+	position: relative;
+}
+.eatlas_spatial_publisher_map .map_container .map .google-logo {
+	position: absolute;
+	left: 3px;
+	bottom: 0px;
+	/* Display on top of the map */
+	z-index: 1;
+	/* Place the logo as low as possible (remove space at the bottom reserved for font "descender") */
+	line-height: 0;
+}
+.eatlas_spatial_publisher_map .map_container .map .google-logo img {
+	/* Copied from a Google map */
+	width: 66px;
+	user-select: none;
+}
+
+.eatlas_spatial_publisher_map .map_panel {
+	/* Those style are activated by JavaScript when the page loads. */
+	/*   It's done that way to make the website works without JavaScript. */
+	/*display: none;*/
+	/*position: absolute;*/
+
+	background-color: #FFFFFF;
+	top: 0;
+	bottom: 0;
+	overflow: auto;
+
+	box-shadow: 0 0 8px #666666;
+}
+
+.eatlas_spatial_publisher_map .map_panel .loading {
+	background: #EEEEEE url("../img/loading.gif") no-repeat center center;
+	display: none;
+	height: 100%;
+}
+
+
+.eatlas_spatial_publisher_map .map_panel .content {
+	padding: 2em;
+}
+
+.eatlas_spatial_publisher_map .map_panel .block .content {
+	padding: 0;
+}
+
+.eatlas_spatial_publisher_map .map_panel .content .panel-header h2.title {
+	margin-top: 0;
+	font-size: 2.5em;
+}
+
+.eatlas_spatial_publisher_map .map_panel_button {
+	display: none; /* Hidden when the page loads */
+
+	background-color: #FFFFFF;
+	position: absolute;
+	top: 10px;
+	padding: 5px 8px;
+	cursor: pointer;
+
+	box-shadow: 0 0 8px #666666;
+}
+
+/* Node preview */
+.node-type-eatlas-publisher-region-set .preview {
+	width: 100%;
+}
+
+
+/* Panel style */
+
+.eatlas_spatial_publisher_map .map_panel .separator {
+	height: 2em;
+	background-color: #00A0DF;
+	margin: 0 0 1em 0;
+}
+.eatlas_spatial_publisher_map .map_panel .separator .square-1,
+.eatlas_spatial_publisher_map .map_panel .separator .square-2 {
+	display: inline-block;
+	height: 100%;
+	width: 2em;
+}
+.eatlas_spatial_publisher_map .map_panel .separator .square-1 {
+	background-color: #001E62;
+}
+.eatlas_spatial_publisher_map .map_panel .separator .square-2 {
+	background-color: #485DC5;
+}
+
+.eatlas_spatial_publisher_map .map_panel .template-menu ul {
+	list-style-type: none;
+	margin: 0 0 1em 0;
+	padding: 0 0 2px 0;
+	border-bottom: 2px solid #CCC;
+}
+
+.eatlas_spatial_publisher_map .map_panel .template-menu li {
+	display: inline-block;
+}
+
+.eatlas_spatial_publisher_map .map_panel .template-menu li a {
+	margin: 0 0.5em;
+	padding: 0 0.2em 0.1em 0.2em;
+	font-weight: bold;
+	text-decoration: none;
+}
+
+.eatlas_spatial_publisher_map .map_panel .template-menu li.active a {
+	color: #046e9c;
+	border-bottom: 2px solid #046e9c;
+}
+
+.eatlas_spatial_publisher_map .map_panel .template-menu li a:hover {
+	color: #95cae1;
+	border-bottom: 2px solid #95cae1;
+	text-decoration: none;
+}
+
+/* Prevent the "arrows" on each side of the flexslider from increasing the element width */
+.eatlas_spatial_publisher_map .flexslider-wrapper {
+	overflow: hidden;
+}
+
+/* Set the images in the slider to take 100% of the available space */
+.eatlas_spatial_publisher_map .flexslider-wrapper .wysiwyg-media-file {
+	width: 100% !important;
+}
+
+.eatlas_spatial_publisher_map .node-block {
+	overflow: auto;
+	cursor: pointer;
+	margin: 1em 0;
+}
+
+.eatlas_spatial_publisher_map .node-block .node-title {
+	margin: 0 0 0.5em 0;
+}
+.eatlas_spatial_publisher_map .node-block .node-body p {
+	margin: 0;
+}
+
+.eatlas_spatial_publisher_map .node-block .node-preview-image {
+	float: left;
+	margin: 0 1em 0.5em 0;
+	border: 1px solid #CCCCCC;
+	padding: 3px;
+	line-height: 0;
+	box-shadow: 3px 3px 10px #888888;
+}
+
+.eatlas_spatial_publisher_map .related-images .related-image {
+	margin: 1em;
+}
+
+
+/* Template CSS */
+
+.eatlas_spatial_publisher_map .content .stats .title {
+	font-weight: bold;
+}
+
+.eatlas_spatial_publisher_map .content .devel {
+	text-align: right;
+	font-size: 0.6em;
+	opacity: 0.5;
+}
+
+.eatlas_spatial_publisher_map .content table.species-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 1em 0;
+}
+
+.eatlas_spatial_publisher_map .content table.species-table th,
+.eatlas_spatial_publisher_map .content table.species-table td {
+	border: 1px solid #BBBBBB;
+	padding: 0.5em 1em;
+}
+
+.eatlas_spatial_publisher_map .content table.species-table th {
+	background-color: #666666;
+	color: #FFFFFF;
+}
+
+.eatlas_spatial_publisher_map .content table.species-table td.count {
+	text-align: right;
+}
+
+.eatlas_spatial_publisher_map .region-site-map .active {
+	font-weight: bold;
+}
+.eatlas_spatial_publisher_map .region-site-map .not-active {
+	font-weight: normal;
+}
+
+/* Back to top button */
+.goto-top-button {
+	position: fixed;
+	bottom: 5px;
+	right: 20px;
+	background-color: #666666;
+	border-radius: 3px;
+	padding: 5px 8px;
+	opacity: 0.5;
+
+	/* Slowly apply "hover" style */
+	transition: all 0.5s ease;
+}
+.goto-top-button,
+.goto-top-button:link,
+.goto-top-button:visited {
+	color: #ffffff;
+	text-decoration: none;
+	font-weight: bold;
+}
+.goto-top-button:hover {
+	opacity: 1;
+}
+
+
+/* Responsive */
+
+@media screen and (max-width: 700px) {
+	/* Move the panel bellow the map */
+	.navigation_map_node .map_panel_button {
+		display: none;
+	}
+
+	.navigation_map_node .map_panel {
+		display: block;
+		width: 100% !important;
+		min-width: 100% !important;
+
+		/* Reset */
+		position: static !important;
+		right: 0 !important;
+	}
+
+	.eatlas_spatial_publisher_map .map_panel .loading {
+		height: 200px;
+	}
+}

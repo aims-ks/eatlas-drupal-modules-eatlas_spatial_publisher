@@ -1,0 +1,278 @@
+<?php
+
+include_once('eatlas_spatial_publisher.constants.inc');
+
+/**
+ * Implements: hook_install().
+ */
+function eatlas_spatial_publisher_install() {
+
+	$publisher_vocabulary = taxonomy_vocabulary_machine_name_load(EATLAS_SPATIAL_PUBLISHER_VOCABULARY);
+	if (!$publisher_vocabulary) {
+		$publisher_vocabulary = (object) array(
+			'name' => 'Spatial Publisher',
+			'description' => 'Vocabulary automatically created for the eatlas_spatial_publisher module.',
+			'machine_name' => EATLAS_SPATIAL_PUBLISHER_VOCABULARY,
+			'module' => 'eatlas_spatial_publisher'
+		);
+		taxonomy_vocabulary_save($publisher_vocabulary);
+	}
+
+	// Create the term type and metadata_id fields
+	_eatlas_spatial_publisher_create_taxonomy_fields();
+}
+
+function eatlas_spatial_publisher_uninstall () {
+
+	// Delete all the "eatlas_publisher_region_set" nodes at once
+	//   http://api.drupal.org/api/function/node_delete_multiple/7
+	$nids = db_select('node', 'n')
+			->fields('n', array('nid'))
+			->condition('n.type', EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE, '=')
+			->execute()
+			->fetchCol();
+	node_delete_multiple($nids);
+
+	// Delete the "eatlas_publisher_region_set" node type
+	node_type_delete(EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+
+	// Clear variables
+	variable_del('comment_' . EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+}
+
+// Types:
+//   https://www.drupal.org/docs/7/api/field-api/field-types-and-settings
+function _eatlas_spatial_publisher_create_taxonomy_fields() {
+	_eatlas_spatial_publisher_create_taxonomy_field(array(
+		'field_name' => 'field_eatlas_publisher_featureid', // Max 32 characters!
+		'type' => 'text',
+		'label' => 'GeoJSON Feature ID',
+		'description' => 'eAtlas Spatial Publisher automatically created field',
+		'required' => FALSE
+	));
+	_eatlas_spatial_publisher_create_taxonomy_field(array(
+		'field_name' => 'field_eatlas_publisher_nid', // Max 32 characters!
+		'type' => 'number_integer', // TODO Dropdown of all the Region set nodes for the site_tid (get site_tid from the value of "form-item-parent", automatically update the values when the field changes - using JQuery and Ajax, this will be hard to do)
+		'label' => 'Region set node ID',
+		'description' => 'eAtlas Spatial Publisher automatically created field',
+		'required' => FALSE
+	));
+}
+
+function _eatlas_spatial_publisher_create_taxonomy_field($field_config) {
+	$field_name = $field_config['field_name'];
+
+	$field = field_info_field($field_name);
+	// If the field do not exists
+	if (!$field) {
+		$field = field_create_field($field_config);
+		watchdog('eatlas_spatial_publisher', 'Field "'.$field_name.'" created');
+	} else {
+		watchdog('eatlas_spatial_publisher', 'Field "'.$field_name.'" already exists');
+	}
+
+
+	$instance = field_info_instance('taxonomy_term', $field_name, EATLAS_SPATIAL_PUBLISHER_VOCABULARY);
+	if (!$instance){
+		$field_instance_config = $field_config;
+		$field_instance_config['entity_type'] = 'taxonomy_term';
+		$field_instance_config['bundle'] = EATLAS_SPATIAL_PUBLISHER_VOCABULARY;
+		field_create_instance($field_instance_config);
+		watchdog('eatlas_spatial_publisher', 'Field "'.$field_name.'" added to "' . EATLAS_SPATIAL_PUBLISHER_VOCABULARY . '".');
+	} else {
+		watchdog('eatlas_spatial_publisher', 'Field "'.$field_name.'" is already setup for "' . EATLAS_SPATIAL_PUBLISHER_VOCABULARY . '".');
+	}
+}
+
+/**
+ * Implements: hook_schema().
+ * Define the DB tables that holds extra info about the spatial publisher sites.
+ * Schema API:
+ *   https://api.drupal.org/api/drupal/includes%21database%21schema.inc/group/schemaapi/7
+ * Data types:
+ *   https://www.drupal.org/docs/7/api/schema-api/data-types
+ *
+ * See eatlas_spatial_publisher.module for more info about the structure of the module.
+ */
+function eatlas_spatial_publisher_schema() {
+	$schema[EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE] = array(
+		'description' => 'The eAtlas Spatial Publisher site configuration table.',
+		'fields' => array(
+			'tid' => array(
+				'description' => 'The primary identifier for a Spatial Publisher site (the term ID).',
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE
+			),
+			'theme' => array(
+				'description' => 'Site theme.',
+				'type' => 'text',
+				'size' => 'normal'
+			),
+			// TODO Add pretty much everything that is in the Branding module
+
+			// Initial zoom bounding box
+			// Since 7.x-0.15
+			'bbox_north' => array(
+				'description' => 'Initial bounding box - North.',
+				'type' => 'int'
+			),
+			'bbox_east' => array(
+				'description' => 'Initial bounding box - East.',
+				'type' => 'int'
+			),
+			'bbox_south' => array(
+				'description' => 'Initial bounding box - South.',
+				'type' => 'int'
+			),
+			'bbox_west' => array(
+				'description' => 'Initial bounding box - West.',
+				'type' => 'int'
+			)
+		),
+		'foreign keys' => array(
+			EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE . '_tid' => array(
+				'table' => 'taxonomy_term_data',
+				'columns' => array('tid' => 'tid')
+			)
+		),
+		'primary key' => array('tid')
+	);
+
+	// region_menus
+	// Since 7.x-0.6
+	$schema[EATLAS_SPATIAL_PUBLISHER_DB_MENU_TABLE] = array(
+		'description' => 'The eAtlas Spatial Publisher database table used to store the list of menu which needs to contain the region sub-menu.',
+		'fields' => array(
+			'tid' => array(
+				'description' => 'The Spatial Publisher site ID.',
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE
+			),
+			// Similar to "menu_name" field described in "menu_schema" function found in "menu.install" file of core "menu" module.
+			'menu_name' => array(
+				'description' => 'The region menu name.',
+				'type' => 'varchar',
+				'length' => 32,
+				'not null' => TRUE,
+				'default' => ''
+			)
+		),
+		'foreign keys' => array(
+			EATLAS_SPATIAL_PUBLISHER_DB_MENU_TABLE . '_tid' => array(
+				'table' => EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE,
+				'columns' => array('tid' => 'tid'),
+			),
+			EATLAS_SPATIAL_PUBLISHER_DB_MENU_TABLE . '_menu_name' => array(
+				'table' => 'menu_custom',
+				'columns' => array('menu_name' => 'menu_name'),
+			)
+		),
+		'primary key' => array('tid', 'menu_name')
+	);
+
+	// Supplementary CSV files associated with sites (example: "species.csv")
+	// Since 7.x-0.20
+	$schema[EATLAS_SPATIAL_PUBLISHER_DB_EXTRA_CSV_TABLE] = array(
+		'description' => 'The eAtlas Spatial Publisher database table used to store the list of supplementary CSV files associates with a site.',
+		'fields' => array(
+			'tid' => array(
+				'description' => 'The Spatial Publisher site ID.',
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE
+			),
+			// NOTE: Can't use "text" size "normal" with a PK.
+			//   32 chars for a variable name should be plenty.
+			'variable' => array(
+				'description' => 'The variable name sent to the template.',
+				'type' => 'varchar',
+				'length' => 32,
+				'not null' => TRUE
+			),
+			'csv' => array(
+				'description' => 'The CSV file ID.',
+				'type' => 'int'
+			)
+		),
+		'foreign keys' => array(
+			EATLAS_SPATIAL_PUBLISHER_DB_EXTRA_CSV_TABLE . '_tid' => array(
+				'table' => EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE,
+				'columns' => array('tid' => 'tid'),
+			)
+		),
+		'primary key' => array('tid', 'variable')
+	);
+
+	return $schema;
+}
+
+/**
+ * Updates
+ * Implements: hook_update_N
+ *   https://api.drupal.org/api/drupal/modules%21system%21system.api.php/function/hook_update_N/7
+ *
+ * N = 7X00
+ *   7 = Drupal core 7.
+ *   X = Module major version.
+ *   00 = Sequential number, for all the updates on that major version.
+ *
+ * Comments for each updates functions are used by Drupal as update notes.
+ * $sandbox is used with long updates (to manage the progress bar)
+ *
+ * Developper note:
+ *   To rerun an update, set the Update status back to the previous update (or 0 to rerun all updates)
+ *   UPDATE system SET schema_version=0 WHERE name='eatlas_spatial_publisher';
+ *     See: http://drupal.stackexchange.com/questions/42204/reseting-the-hook-update-n-status-of-a-module#42207
+ */
+
+/**
+ * Update the Database to store the list of menus. (7.x-0.6)
+ */
+function eatlas_spatial_publisher_update_7000(&$sandbox) {
+	// Create the menu table if it doesn't already exists
+	if (!db_table_exists(EATLAS_SPATIAL_PUBLISHER_DB_MENU_TABLE)) {
+		db_create_table(EATLAS_SPATIAL_PUBLISHER_DB_MENU_TABLE, drupal_get_schema(EATLAS_SPATIAL_PUBLISHER_DB_MENU_TABLE));
+	}
+}
+
+/**
+ * Update the Database to store the site initial zoom bounding box. (7.x-0.15)
+ */
+function eatlas_spatial_publisher_update_7001(&$sandbox) {
+	$schema = drupal_get_schema(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE);
+	if (!db_field_exists(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_north')) {
+		db_add_field(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_north', $schema['fields']['bbox_north']);
+	}
+	if (!db_field_exists(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_east')) {
+		db_add_field(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_east', $schema['fields']['bbox_east']);
+	}
+	if (!db_field_exists(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_south')) {
+		db_add_field(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_south', $schema['fields']['bbox_south']);
+	}
+	if (!db_field_exists(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_west')) {
+		db_add_field(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_west', $schema['fields']['bbox_west']);
+	}
+}
+
+/**
+ * Update the Database to store the list of supplementary CSV files. (7.x-0.20)
+ */
+function eatlas_spatial_publisher_update_7002(&$sandbox) {
+	// Create the supplementary CSV file table if it doesn't already exists
+	if (!db_table_exists(EATLAS_SPATIAL_PUBLISHER_DB_EXTRA_CSV_TABLE)) {
+		db_create_table(EATLAS_SPATIAL_PUBLISHER_DB_EXTRA_CSV_TABLE, drupal_get_schema(EATLAS_SPATIAL_PUBLISHER_DB_EXTRA_CSV_TABLE));
+	}
+}
+
+/**
+ * Remove the table "eatlas_spatial_publisher_region_set" from the Database. The Region Sets are saved as node. (7.x-0.24)
+ */
+function eatlas_spatial_publisher_update_7003(&$sandbox) {
+	if (db_table_exists('eatlas_spatial_publisher_region_set')) {
+		db_drop_table('eatlas_spatial_publisher_region_set');
+	}
+}
+
+?>
