@@ -276,24 +276,7 @@ function _eatlas_spatial_publisher_regions_set_find_feature_node($feature_tree, 
 function _eatlas_spatial_publisher_regions_set_get_feature_template($node, $feature_id) {
 	// http://aims.ereefs.localhost/eatlas_spatial_publisher/4003/feature/qld
 
-	$feature = NULL;
-	if ($node) {
-		$geojson_content = _eatlas_spatial_publisher_regions_set_get_geojson_content($node);
-
-		if ($geojson_content && isset($geojson_content['features'])) {
-			// Find the feature in the GeoJSON file
-			$features = $geojson_content['features'];
-			if ($features) {
-				foreach ($features as $current_feature) {
-					if ($current_feature['id'] === $feature_id) {
-						$feature = $current_feature;
-						break;
-					}
-				}
-			}
-		}
-	}
-
+	$feature = eatlas_spatial_publisher_get_feature($node, $feature_id);
 	if ($node && $feature) {
 		// Output the feature in the source, to be used as a reference while making the template
 		// TODO Give access to this in the backend, when making the template!

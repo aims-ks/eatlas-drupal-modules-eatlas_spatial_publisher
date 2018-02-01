@@ -9,5 +9,4 @@ creator = Gael Lafond
 ;   This variable is an array, one cell per element. Use "\n" for new lines.
 ;   Those properties are used with release_notes and tags.
 ;   See: https://www.drupal.org/documentation/releases/types
-Bug fixes[] = Convert CSV files into ASCII to make them readable by both Macintosh and Windows version of Excel, whatever encoding the computer uses.
-Bug fixes[] = Put back the file encoding fix on the file upload instead of file load. We want our used to work with fixed ASCII CSV file. If the original CSV file contains extended ASCII characters, it's usable with both Macintosh and Windows version of Excel (the Macintosh version software generate CSV files that even itself can't use).
+New features[] = Added API functions 'eatlas_spatial_publisher_get_feature' and 'eatlas_spatial_publisher_get_feature_bbox'.

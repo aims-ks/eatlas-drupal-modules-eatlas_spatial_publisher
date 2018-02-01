@@ -764,4 +764,70 @@ function eatlas_spatial_publisher_get_initial_zoom_bbox($node) {
 	return json_encode($bbox);
 }
 
+/*****************
+ * API functions *
+ *****************/
+
+function eatlas_spatial_publisher_get_feature($node, $feature_id) {
+	$feature = NULL;
+	if ($node) {
+		$geojson_content = _eatlas_spatial_publisher_regions_set_get_geojson_content($node);
+
+		if ($geojson_content && isset($geojson_content['features'])) {
+			// Find the feature in the GeoJSON file
+			$features = $geojson_content['features'];
+			if ($features) {
+				foreach ($features as $current_feature) {
+					if ($current_feature['id'] === $feature_id) {
+						$feature = $current_feature;
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	return $feature;
+}
+
+function eatlas_spatial_publisher_get_feature_bbox($node, $feature_id) {
+	$feature = eatlas_spatial_publisher_get_feature($node, $feature_id);
+
+	$bbox = array(
+		'north' => NULL, // Max:   90
+		'east' => NULL,  // Max:  180
+		'south' => NULL, // Min:  -90
+		'west' => NULL,  // Min: -180
+		'projection' => 'EPSG:4326'
+	);
+	if (isset($feature['geometry']) && isset($feature['geometry']['coordinates'])) {
+		$coordinates = $feature['geometry']['coordinates'];
+
+		foreach ($coordinates as $coordinateGroup) {
+			foreach ($coordinateGroup as $coordinateCouple) {
+				$lon = $coordinateCouple[0]; // east and west
+				$lat = $coordinateCouple[1]; // north and south
+
+				// Longitude
+				if ($bbox['east'] === NULL || $lon > $bbox['east']) {
+					$bbox['east'] = $lon;
+				}
+				if ($bbox['west'] === NULL || $lon < $bbox['west']) {
+					$bbox['west'] = $lon;
+				}
+
+				// Latitude
+				if ($bbox['north'] === NULL || $lat > $bbox['north']) {
+					$bbox['north'] = $lat;
+				}
+				if ($bbox['south'] === NULL || $lat < $bbox['south']) {
+					$bbox['south'] = $lat;
+				}
+			}
+		}
+	}
+
+	return $bbox;
+}
+
 ?>

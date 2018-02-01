@@ -103,8 +103,6 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 		this.panel_el.show();
 	}
 
-
-
 	// Add button event listeners
 	if (this.panel_button_el) {
 		this.panel_button_el.css('right', '0');
@@ -180,7 +178,7 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 					// Change the alpha of the colour
 					colourArray[3] = alpha;
 					return colourArray;
-				}
+				};
 
 				var baseStyle = null;
 				if (layerConfig.style) {
@@ -211,7 +209,7 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 
 				return baseStyle;
 			}
-		};
+		}
 
 		// How to preload the layer
 		//   https://stackoverflow.com/questions/33533911/ol3-force-loading-of-source

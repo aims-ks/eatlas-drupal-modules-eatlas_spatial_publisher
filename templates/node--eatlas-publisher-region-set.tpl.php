@@ -95,7 +95,7 @@ $context = new EAtlas_spatial_publisher_template_context($node, NULL);
 					loadState(state);
 				}
 			});
-			currentState = getURLParameters()
+			currentState = getURLParameters();
 			loadState(currentState);
 
 			function changeState(state) {
@@ -248,7 +248,7 @@ $context = new EAtlas_spatial_publisher_template_context($node, NULL);
 					}
 				}
 				return parameters;
-			};
+			}
 		});
 	}(jQuery));
 

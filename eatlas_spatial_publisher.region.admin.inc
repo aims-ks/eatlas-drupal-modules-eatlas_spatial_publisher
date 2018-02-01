@@ -144,7 +144,7 @@ function _eatlas_spatial_publisher_region_parse_csv(stdClass $node, $csv_file) {
 					$cell_value = trim($cell);
 					if ($i === $id_column_number) {
 						$id = $cell_value;
-					} else {
+					} elseif ($columns[$i]) {
 						$record[$columns[$i]] = $cell_value;
 					}
 				}
@@ -191,7 +191,6 @@ function _eatlas_spatial_publisher_region_merge_geojson_csv(stdClass $node, $geo
 		if (isset($feature['properties'][$id_column])) {
 			$feature['id'] = $feature['properties'][$id_column];
 		}
-
 		if (isset($feature['id'])) {
 			$id = $feature['id'];
 			if (isset($csv[$id])) {
