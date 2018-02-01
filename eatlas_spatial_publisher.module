@@ -794,10 +794,10 @@ function eatlas_spatial_publisher_get_feature_bbox($node, $feature_id) {
 	$feature = eatlas_spatial_publisher_get_feature($node, $feature_id);
 
 	$bbox = array(
-		'west' => NULL,  // Min: -180
-		'south' => NULL, // Min:  -90
-		'east' => NULL,  // Max:  180
-		'north' => NULL, // Max:   90
+		'lonMin' => NULL,  // Min: -180
+		'latMin' => NULL, // Min:  -90
+		'lonMax' => NULL,  // Max:  180
+		'latMax' => NULL, // Max:   90
 		'projection' => 'EPSG:4326'
 	);
 	if (isset($feature['geometry']) && isset($feature['geometry']['coordinates'])) {
@@ -808,19 +808,19 @@ function eatlas_spatial_publisher_get_feature_bbox($node, $feature_id) {
 			$lat = $coordinateCouple[1]; // north and south
 
 			// Longitude
-			if ($bbox['east'] === NULL || $lon > $bbox['east']) {
-				$bbox['east'] = $lon;
+			if ($bbox['lonMax'] === NULL || $lon > $bbox['lonMax']) {
+				$bbox['lonMax'] = $lon;
 			}
-			if ($bbox['west'] === NULL || $lon < $bbox['west']) {
-				$bbox['west'] = $lon;
+			if ($bbox['lonMin'] === NULL || $lon < $bbox['lonMin']) {
+				$bbox['lonMin'] = $lon;
 			}
 
 			// Latitude
-			if ($bbox['north'] === NULL || $lat > $bbox['north']) {
-				$bbox['north'] = $lat;
+			if ($bbox['latMax'] === NULL || $lat > $bbox['latMax']) {
+				$bbox['latMax'] = $lat;
 			}
-			if ($bbox['south'] === NULL || $lat < $bbox['south']) {
-				$bbox['south'] = $lat;
+			if ($bbox['latMin'] === NULL || $lat < $bbox['latMin']) {
+				$bbox['latMin'] = $lat;
 			}
 		}
 	}
