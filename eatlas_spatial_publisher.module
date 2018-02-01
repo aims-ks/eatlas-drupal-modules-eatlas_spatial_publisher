@@ -34,7 +34,7 @@ include_once('eatlas_spatial_publisher.map_block.inc');
  *         \-- Spatial Publisher region
  *                 Type: DB table (eatlas_spatial_publisher_region)
  *                 Data: 3nd level taxonomy term
- * 
+ *
  * Example:
  *
  * Australian Marine Parks Science Atlas (AMPSA)
@@ -128,7 +128,7 @@ function _eatlas_spatial_publisher_sites_admin_access() {
 	}
 	$vid = $publisher_vocabulary->vid;
 
-	return user_access('administer eatlas spatial publisher') && 
+	return user_access('administer eatlas spatial publisher') &&
 		(user_access("edit terms in $vid") || user_access('administer taxonomy'));
 }
 
@@ -141,7 +141,7 @@ function _eatlas_spatial_publisher_site_edit_access(stdClass $taxonomy_term) {
 	}
 	$vid = $publisher_vocabulary->vid;
 
-	return (user_access("administer eatlas spatial publisher site $tid") || user_access('administer eatlas spatial publisher')) && 
+	return (user_access("administer eatlas spatial publisher site $tid") || user_access('administer eatlas spatial publisher')) &&
 		(user_access("edit terms in $vid") || user_access('administer taxonomy'));
 }
 
@@ -676,7 +676,7 @@ function eatlas_spatial_publisher_preprocess_page(&$variables) {
  * NOTE: The best way to prepare a string for JavaScript is to use JSON.
  *   https://stackoverflow.com/questions/168214/pass-a-php-string-to-a-javascript-variable-and-escape-newlines
  */
-function eatlas_spatial_publisher_get_layers_js_array($node) { 
+function eatlas_spatial_publisher_get_layers_js_array($node) {
 	// Get the url for the service which output the combined GeoJSON and CSV
 	$geoJSON_url = url("eatlas_spatial_publisher/$node->nid/geojson");
 
@@ -794,40 +794,64 @@ function eatlas_spatial_publisher_get_feature_bbox($node, $feature_id) {
 	$feature = eatlas_spatial_publisher_get_feature($node, $feature_id);
 
 	$bbox = array(
-		'north' => NULL, // Max:   90
-		'east' => NULL,  // Max:  180
-		'south' => NULL, // Min:  -90
 		'west' => NULL,  // Min: -180
+		'south' => NULL, // Min:  -90
+		'east' => NULL,  // Max:  180
+		'north' => NULL, // Max:   90
 		'projection' => 'EPSG:4326'
 	);
 	if (isset($feature['geometry']) && isset($feature['geometry']['coordinates'])) {
-		$coordinates = $feature['geometry']['coordinates'];
+		$coordinates = _eatlas_spatial_publisher_get_feature_coordinates($feature['geometry']['coordinates']);
 
-		foreach ($coordinates as $coordinateGroup) {
-			foreach ($coordinateGroup as $coordinateCouple) {
-				$lon = $coordinateCouple[0]; // east and west
-				$lat = $coordinateCouple[1]; // north and south
+		foreach ($coordinates as $coordinateCouple) {
+			$lon = $coordinateCouple[0]; // east and west
+			$lat = $coordinateCouple[1]; // north and south
 
-				// Longitude
-				if ($bbox['east'] === NULL || $lon > $bbox['east']) {
-					$bbox['east'] = $lon;
-				}
-				if ($bbox['west'] === NULL || $lon < $bbox['west']) {
-					$bbox['west'] = $lon;
-				}
+			// Longitude
+			if ($bbox['east'] === NULL || $lon > $bbox['east']) {
+				$bbox['east'] = $lon;
+			}
+			if ($bbox['west'] === NULL || $lon < $bbox['west']) {
+				$bbox['west'] = $lon;
+			}
 
-				// Latitude
-				if ($bbox['north'] === NULL || $lat > $bbox['north']) {
-					$bbox['north'] = $lat;
-				}
-				if ($bbox['south'] === NULL || $lat < $bbox['south']) {
-					$bbox['south'] = $lat;
-				}
+			// Latitude
+			if ($bbox['north'] === NULL || $lat > $bbox['north']) {
+				$bbox['north'] = $lat;
+			}
+			if ($bbox['south'] === NULL || $lat < $bbox['south']) {
+				$bbox['south'] = $lat;
 			}
 		}
 	}
 
 	return $bbox;
+}
+
+/**
+ * Return a flat list of coordinates.
+ * @param $raw_coordinates array A list of coordinates, possibly nested in a multi-level deep array. Example: $feature['geometry']['coordinates']
+ */
+function _eatlas_spatial_publisher_get_feature_coordinates($raw_coordinates) {
+	$coordinates_list = array();
+
+	if ($raw_coordinates) {
+		$count = count($raw_coordinates);
+		if ($count > 0) {
+			if ($count === 2 && is_numeric($raw_coordinates[0]) && is_numeric($raw_coordinates[1])) {
+				$coordinates_list[] = $raw_coordinates;
+			} else {
+				foreach ($raw_coordinates as $coordinates) {
+					$sub_coordinates_list = _eatlas_spatial_publisher_get_feature_coordinates($coordinates);
+					if ($sub_coordinates_list && count($sub_coordinates_list) > 0) {
+						$coordinates_list = array_merge($coordinates_list, $sub_coordinates_list);
+					}
+				}
+			}
+		}
+	}
+
+	return $coordinates_list;
 }
 
 ?>
