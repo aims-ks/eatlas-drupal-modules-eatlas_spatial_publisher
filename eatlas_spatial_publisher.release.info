@@ -9,4 +9,4 @@ creator = Gael Lafond
 ;   This variable is an array, one cell per element. Use "\n" for new lines.
 ;   Those properties are used with release_notes and tags.
 ;   See: https://www.drupal.org/documentation/releases/types
-Bug fixes[] = Fixing API function 'eatlas_spatial_publisher_get_feature_bbox' to work with multi-polygons features.
+Bug fixes[] = Change keys for bbox in 'eatlas_spatial_publisher_get_feature_bbox' to lat lon naming.
