@@ -61,7 +61,7 @@
 	/* Those style are activated by JavaScript when the page loads. */
 	/*   It's done that way to make the website works without JavaScript. */
 	/*display: none;*/
-	/*position: absolute;*/ 
+	/*position: absolute;*/
 
 	background-color: #FFFFFF;
 	top: 0;
@@ -164,6 +164,27 @@
 /* Prevent the "arrows" on each side of the flexslider from increasing the element width */
 .eatlas_spatial_publisher_map .flexslider-wrapper {
 	overflow: hidden;
+  position: relative;
+}
+
+.eatlas_spatial_publisher_map .flexslider-wrapper .flexslider .slides > li {
+  position: relative;
+}
+
+.eatlas_spatial_publisher_map .flexslider-wrapper .media-license {
+  font-size: 10px;
+  padding: 4px;
+  position: absolute;
+  bottom: 5px;
+  right: 0;
+  background-color: rgba(0,0,0,0.4);
+  color: #aaaaaa;
+}
+
+.eatlas_spatial_publisher_map .flexslider-wrapper .media-license .cc,
+.eatlas_spatial_publisher_map .flexslider-wrapper .media-license .cc_nd,
+.eatlas_spatial_publisher_map .flexslider-wrapper .media-license .cc_nc {
+  margin-bottom: -3px;
 }
 
 /* Set the images in the slider to take 100% of the available space */

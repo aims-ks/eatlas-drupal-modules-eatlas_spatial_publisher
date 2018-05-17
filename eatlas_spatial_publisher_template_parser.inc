@@ -321,7 +321,8 @@ class EAtlas_spatial_publisher_template_context {
 							$output .=
 								'<div class="flexslider-wrapper">' .
 									'<a href="' . $link . '" class="flexslider-bgimage" style="background-image:url(\'' . $this->MACRO_ImageURL($file->fid, $style) . '\')"></a>' .
-								'</div>';
+					                theme('eatlas_media_gallery_fixes_license', array('file' => $file, 'color' => 'dark')) .
+                				'</div>';
 						} else {
 							// Activate the image slider (when the page will be ready)
 							$output .=
@@ -347,6 +348,7 @@ class EAtlas_spatial_publisher_template_context {
 								$output .=
 									'<li>' .
 										'<a href="' . $link . '" class="flexslider-bgimage" style="background-image:url(\'' . $this->MACRO_ImageURL($file->fid, $style) . '\')"></a>' .
+					                    theme('eatlas_media_gallery_fixes_license', array('file' => $file, 'color' => 'dark')) .
 									'</li>';
 
 								$counter++;
