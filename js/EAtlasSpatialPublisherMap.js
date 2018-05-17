@@ -21,6 +21,8 @@ function EAtlasSpatialPublisherMap(config) {
 
 	this.panel_button_el = this.map_container_el.find('.map_panel_button');
 	this.panel_el = this.map_container_el.find('.map_panel');
+	this.initial_panel_width = null;
+	this.min_map_width = 30;
 
 	this.map_el = this.map_container_el.find('.map');
 
@@ -47,11 +49,25 @@ function EAtlasSpatialPublisherMap(config) {
 	//   eventListenerId: callback
 	// }
 	this.onLayersReadyCallbackMap = {};
+
+	// Used to resize the map after a short delay.
+	// This is used to fix the "mouse over" offset issue.
+	this.delayedMapResize = null;
 }
 
 EAtlasSpatialPublisherMap.prototype.init = function() {
-	this.panel_el.hide();
+	if (this.config.panelCss) {
+		this.panel_el.css(this.config.panelCss);
+		if (this.config.panelCss.width) {
+			this.initial_panel_width = this.config.panelCss.width;
+		}
+	}
+	if (!this.initial_panel_width) {
+		this.initial_panel_width = this.panel_el.css('width') || this.panel_el.width();
+	}
+
 	this.panel_el.css('position', 'absolute');
+	this.showMap();
 
 	// Auto-adjust map size when window is resized (when viewed as node)
 	var navigationMap = jQuery('.navigation_map_node .eatlas_spatial_publisher_map');
@@ -63,7 +79,10 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 				var navigationMapTop = that.map_container_el.position().top;
 				var bottomPanelMinHeight = that.isPanelBellowMap() ? 150 : 0;
 
-				var mapHeight = pageHeight - navigationMapTop - bottomPanelMinHeight;
+				// NOTE: The map needs to be smaller than the calculated value (-1px),
+				//   otherwise it trigger the browser body scroller when the
+				//   window is zoomed to 125% (Google Chrome)
+				var mapHeight = Math.floor(pageHeight - navigationMapTop - bottomPanelMinHeight) - 1;
 				if (mapHeight < 200) {
 					mapHeight = 200;
 				}
@@ -83,35 +102,45 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 	// Apply CSS
 	jQuery(window).resize(function(that) {
 		return function() {
-			that.onWindowResize(false);
+			that.onWindowResize();
 		};
 	}(this));
-	this.onWindowResize(true);
+	this.onWindowResize();
 
 	// NOTE: The resize event is not triggered automatically on anything
 	//   but the window object. It needs to be triggered manually.
 	this.map_container_el.resize(function (that) {
 		return function () {
 			that.olMap.updateSize();
+
+			// Also trigger the resize 200ms after the action,
+			//   to fix the "mouse over" offset issue.
+			if (that.delayedMapResize) {
+				window.clearTimeout(that.delayedMapResize);
+			}
+			that.delayedMapResize = window.setTimeout(function() {
+				that.olMap.updateSize();
+				that.delayedMapResize = null;
+			}, 200);
 		};
 	}(this));
 
 	// Fix panel width and position
 	if (this.panel_el) {
-		this.panel_el.width(this.panel_el.width());
-		this.panel_el.css('right', '-'+this.panel_el.width());
+		this.panel_el.width(this.initial_panel_width);
+		this.panel_el.css('right', 0);
 		this.panel_el.show();
 	}
 
-	// Add button event listeners
+	// Add button event listeners to show / hide the panel
 	if (this.panel_button_el) {
-		this.panel_button_el.css('right', '0');
+		this.panel_button_el.css('right', this.initial_panel_width);
 		this.panel_button_el.click(function(that) {
 			return function() {
-				if (parseInt(that.panel_el.css('right')) === 0) {
-					that.hidePanel();
+				if (that.panel_el.isExpanded) {
+					that.showMap();
 				} else {
-					that.showPanel();
+					that.hideMap();
 				}
 			};
 		}(this));
@@ -122,41 +151,32 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 
 
 	/* Map */
-	var layers = [
-		/*
+
+	// Create the base layer and add it to the list of layers
+	var baseLayer = null;
+	if (this.config.baseLayer) {
+		try {
+			// "eval" the style and put the result in the styleConf variable.
+			// We need to use "eval" here since there is no way
+			//   to define stroke / fill styles using JSON in OpenLayers 3.
+			//   The style elements are defined using
+			//   instance of OpenLayers objects.
+			eval("baseLayer = " + this.config.baseLayer);
+		} catch (e) {
+			console.log(e);
+		}
+	}
+	// Fallback if baseLayer config is missing or not set properly
+	if (!baseLayer) {
 		// OpenStreetMap base layer
-		new ol.layer.Tile({
+		baseLayer = new ol.layer.Tile({
 			source: new ol.source.OSM()
-		})
-		*/
+		});
+	}
+	var layers = [baseLayer];
 
-		// ** TEMPORARY BASE LAYER **
-		// Google terrain base layer
-		// NOTE: This is very likely against their terms of use:
-		//   https://developers.google.com/maps/terms#section_10_1
-		// See: https://stackoverflow.com/questions/33983656/using-tiled-google-map-with-openlayers-3/33993878#33993878
-		new ol.layer.Tile({
-			source: new ol.source.OSM({
-				url: 'http://mt{0-3}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
-				attributions: [
-					// Add Google copyright attributions - the real one update depending on what you are looking on the map
-					new ol.Attribution({ html: 'Map data ©2017 Google -' }),
-					// Add Google Terms of Use - quite ironic since we are not following it, by pulling the tiles without using their library
-					new ol.Attribution({ html: '<a href="https://www.google.com/intl/en-AU_US/help/terms_maps.html">Terms of Use.</a>' })
-				]
-			})
-		})
-	];
+
 	var highlightedFeature = null;
-
-	// ** GOOGLE LOGO HACK **
-	// Add the Google logo to the bottom left of the browser window (add it to the map container, a bit of a hack)
-	jQuery("#" + this.config.target).append(
-		'<a class="google-logo" href="https://www.google.com/maps" target="_blank">' +
-			'<img src="https://maps.gstatic.com/mapfiles/api-3/images/google4.png" draggable="false">' +
-		'</a>'
-	);
-
 
 	this.geoJSONLayerMap = {};
 	for (var i=0; i<this.config.layers.length; i++) {
@@ -171,6 +191,9 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 
 			return function(feature, resolution) {
 				// Define variables / functions accessible in the scope of the style
+
+				// Set the alpha channel to an hex-colour.
+				// NOTE: Alpha-hex-colours (format: '#RRGGBBAA') are not well supported by old browsers.
 				var getAlphaColour = function(hexColourStr, alpha) {
 					var colourArray = ol.color.asArray(hexColourStr);
 					// Clone the colour array
@@ -180,18 +203,16 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 					return colourArray;
 				};
 
+				// Define variables / functions accessible in the scope of the style
 				var baseStyle = null;
 				if (layerConfig.style) {
 					try {
-						var styleConf = null;
 						// "eval" the style and put the result in the styleConf variable.
 						// We need to use "eval" here since there is no way
 						//   to define stroke / fill styles using JSON in OpenLayers 3.
 						//   The style elements are defined using
 						//   instance of OpenLayers objects.
-						eval("styleConf = " + layerConfig.style);
-
-						baseStyle = new ol.style.Style(styleConf);
+						eval("baseStyle = " + layerConfig.style);
 					} catch (e) {
 						console.log(e);
 					}
@@ -202,9 +223,32 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 				}
 
 				if (feature === highlightedFeature) {
-					var baseStrokeWidth = baseStyle.getStroke().getWidth();
-					var highlightStrokeWidth = baseStrokeWidth ? baseStrokeWidth * 3 : 1;
-					baseStyle.getStroke().setWidth(highlightStrokeWidth);
+					if (layerConfig.highlight_style) {
+						try {
+							eval("baseStyle = " + layerConfig.highlight_style);
+						} catch (e) {
+							console.log(e);
+						}
+					} else {
+						var styleStroke, baseStrokeWidth, highlightStrokeWidth;
+						if (Array.isArray(baseStyle)) {
+							for (var j=0; j<baseStyle.length; j++) {
+								styleStroke = baseStyle[j].getStroke();
+								if (styleStroke) {
+									baseStrokeWidth = styleStroke.getWidth();
+									highlightStrokeWidth = baseStrokeWidth ? baseStrokeWidth * 3 : 1;
+									styleStroke.setWidth(highlightStrokeWidth);
+								}
+							}
+						} else {
+							styleStroke = baseStyle.getStroke();
+							if (styleStroke) {
+								baseStrokeWidth = styleStroke.getWidth();
+								highlightStrokeWidth = baseStrokeWidth ? baseStrokeWidth * 3 : 1;
+								styleStroke.setWidth(highlightStrokeWidth);
+							}
+						}
+					}
 				}
 
 				return baseStyle;
@@ -224,13 +268,14 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 		});
 		layer.config = layerConfig;
 
+		var eventListener = null;
 		if (layerConfig.parentId == null) {
 			this.rootGeoJSONLayer = layer;
-			var eventListener = layer.getSource().on('change', function(that, layer, eventListener) {
-				return function(event) {
+			eventListener = layer.getSource().on('change', function(that, layer, eventListener) {
+				return function() {
 					var layerId = layer.config.id;
 					var layerSource = layer.getSource();
-					if (layerSource.getState() == 'ready') {
+					if (layerSource.getState() === 'ready') {
 						that.geoJSONLayerMap[layerId]["state"] = "ready";
 						layerSource.un('change', eventListener);
 						// Zoom to layer
@@ -248,11 +293,11 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 				};
 			}(this, layer, eventListener));
 		} else {
-			var eventListener = layer.getSource().on('change', function(that, layer, eventListener) {
-				return function(event) {
+			eventListener = layer.getSource().on('change', function(that, layer, eventListener) {
+				return function() {
 					var layerId = layer.config.id;
 					var layerSource = layer.getSource();
-					if (layerSource.getState() == 'ready') {
+					if (layerSource.getState() === 'ready') {
 						that.geoJSONLayerMap[layerId]["state"] = "ready";
 						layerSource.un('change', eventListener);
 						// Hide the layer
@@ -284,10 +329,6 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 			pinchRotate: false,
 			mouseWheelZoom: false,
 			doubleClickZoom: false
-// TODO Check if there is an other way to do the Feature Select (the implemented solution is awful on mobile devices)
-//   https://stackoverflow.com/questions/27767779/cant-select-polygon-after-drawing-it
-//   https://openlayers.org/en/latest/apidoc/ol.interaction.Select.html
-//			featureSelect: new ol.interaction.Select()
 		}),
 		controls: ol.control.defaults({
 			rotate: false,
@@ -318,6 +359,9 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 				ol.proj.transform([parseFloat(this.config.bbox.east), parseFloat(this.config.bbox.north)], lonLatProjection, mapProjection)
 			]
 		);
+
+		// Set the map view
+		this.olMap.getView().fit(this.mapDefaultExtent);
 
 		/*
 		// Display the default extent (bounding box) on the map
@@ -425,6 +469,7 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 			that.olMap.forEachFeatureAtPixel(event.pixel, function(feature, layer) {
 				selectedFeature = feature;
 				selectedLayer = layer;
+				return true;
 			}, {
 				hitTolerance: 10
 			});
@@ -440,7 +485,7 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 			if (dragDistance < 10) {
 				if (selectedFeature && selectedLayer) {
 					// Zoom to the clicked feature
-					that.zoomToFeature(selectedFeature, that.getChildrenLayers(selectedLayer));
+					that.zoomToFeature(selectedFeature, that.getChildLayers(selectedLayer));
 				} else {
 					// Reset the map
 					// Zoom to the root layer
@@ -491,7 +536,7 @@ EAtlasSpatialPublisherMap.prototype.fireLayersReadyCallbacks = function() {
 
 // Internal function
 //   Adjust panel CSS
-EAtlasSpatialPublisherMap.prototype.onWindowResize = function(init) {
+EAtlasSpatialPublisherMap.prototype.onWindowResize = function() {
 	if (this.panel_el) {
 		if (this.isPanelBellowMap()) {
 			this.panel_button_el.hide();
@@ -500,22 +545,17 @@ EAtlasSpatialPublisherMap.prototype.onWindowResize = function(init) {
 		} else {
 			this.panel_button_el.show();
 			this.panel_el.show();
-			var closed = parseInt(this.panel_el.css('right')) < 0;
-			if (this.config.panelCss) {
+
+			if (this.panel_el.isExpanded) {
+				this.panel_el.width(jQuery(window).width() - this.min_map_width);
+			} else if (this.config.panelCss) {
 				this.panel_el.css(this.config.panelCss);
 			}
 
-			if (closed) {
-				this.panel_el.css('right', '-'+this.panel_el.width()+'px');
-			} else {
-				this.panel_button_el.css('right', this.panel_el.width()+'px');
-				this.map_el.css('margin-right', this.panel_el.width()+'px');
-				this.map_container_el.trigger('resize');
-			}
-		}
+			this.panel_button_el.css('right', this.panel_el.width() + 'px');
+			this.map_el.css('margin-right', this.panel_el.width() + 'px');
 
-		if (init) {
-			this.panel_el.css('right', '-'+this.panel_el.width()+'px');
+			this.map_container_el.trigger('resize');
 		}
 	}
 
@@ -539,44 +579,22 @@ EAtlasSpatialPublisherMap.prototype.onWindowResize = function(init) {
 	}(this));
 };
 
-EAtlasSpatialPublisherMap.prototype.showPanel = function() {
+EAtlasSpatialPublisherMap.prototype.showMap = function() {
 	if (this.panel_el && !this.isPanelBellowMap()) {
-		this.panel_el.animate({ right: '0' }, {
+		this.panel_el.animate({ width: this.initial_panel_width }, {
 			duration: this.panelAnimationDuration
 		});
-		this.panel_button_el.animate({ right: this.panel_el.width() }, {
-			duration: this.panelAnimationDuration,
-			complete: function(that) {
-				return function() {
-					that.panel_button_el.html('&gt;');
-				};
-			}(this)
-		});
-		this.map_el.animate({ marginRight: this.panel_el.width() }, {
-			duration: this.panelAnimationDuration,
-			step: function(that) {
-				return function() {
-					that.map_container_el.trigger('resize');
-				};
-			}(this)
-		});
-	}
-};
-
-EAtlasSpatialPublisherMap.prototype.hidePanel = function() {
-	if (this.panel_el && !this.isPanelBellowMap()) {
-		this.panel_el.animate({ right: '-'+this.panel_el.width() }, {
-			duration: this.panelAnimationDuration
-		});
-		this.panel_button_el.animate({ right: '0' }, {
+		this.panel_button_el.animate({ right: this.initial_panel_width }, {
 			duration: this.panelAnimationDuration,
 			complete: function(that) {
 				return function() {
 					that.panel_button_el.html('&lt;');
+					// Manually trigger window resize event to help Image Slider adjust itself
+					jQuery(window).trigger('resize');
 				};
 			}(this)
 		});
-		this.map_el.animate({ marginRight: '0' }, {
+		this.map_el.animate({ marginRight: this.initial_panel_width }, {
 			duration: this.panelAnimationDuration,
 			step: function(that) {
 				return function() {
@@ -584,26 +602,54 @@ EAtlasSpatialPublisherMap.prototype.hidePanel = function() {
 				};
 			}(this)
 		});
+		this.panel_el.isExpanded = false;
+	}
+};
+
+EAtlasSpatialPublisherMap.prototype.hideMap = function() {
+	if (this.panel_el && !this.isPanelBellowMap()) {
+		this.panel_el.animate({ width: jQuery(window).width() - this.min_map_width }, {
+			duration: this.panelAnimationDuration
+		});
+		this.panel_button_el.animate({ right: jQuery(window).width() - this.min_map_width }, {
+			duration: this.panelAnimationDuration,
+			complete: function(that) {
+				return function() {
+					that.panel_button_el.html('&gt;');
+					// Manually trigger window resize event to help Image Slider adjust itself
+					jQuery(window).trigger('resize');
+				};
+			}(this)
+		});
+		this.map_el.animate({ marginRight: jQuery(window).width() - this.min_map_width }, {
+			duration: this.panelAnimationDuration,
+			step: function(that) {
+				return function() {
+					that.map_container_el.trigger('resize');
+				};
+			}(this)
+		});
+		this.panel_el.isExpanded = true;
 	}
 };
 
 EAtlasSpatialPublisherMap.prototype.isPanelBellowMap = function() {
 	return this.panel_el && this.panel_el.css('position') !== 'absolute';
-}
+};
 
 
 
 EAtlasSpatialPublisherMap.prototype.setPanelContent = function(content) {
 	this.panel_el.find('.content').html(content);
-	this.showPanel();
+	this.panel_el.trigger('content-change');
 };
 
 EAtlasSpatialPublisherMap.prototype.loadPanelContent = function(contentUrl) {
-	this.showPanel();
 	this.showPanelLoading();
 	this.panel_el.find('.content').load(contentUrl, function(that) {
 		return function() {
 			that.hidePanelLoading();
+			that.panel_el.trigger('content-change');
 		};
 	}(this));
 };
@@ -621,7 +667,7 @@ EAtlasSpatialPublisherMap.prototype.hidePanelLoading = function() {
 
 /* Map methods */
 
-EAtlasSpatialPublisherMap.prototype.getChildrenLayers = function(layer) {
+EAtlasSpatialPublisherMap.prototype.getChildLayers = function(layer) {
 	var childrenLayers = [];
 	for (var layerId in this.geoJSONLayerMap) {
 		if (this.geoJSONLayerMap.hasOwnProperty(layerId)) {
@@ -653,7 +699,7 @@ EAtlasSpatialPublisherMap.prototype.zoomToFeatureId = function(featureId) {
 				var parentLayer = that.getParentLayer(featureLayer);
 				that.zoomToFeature(
 						featureIdMap[featureId]["feature"],
-						that.getChildrenLayers(parentLayer)
+						that.getChildLayers(parentLayer)
 				);
 			}
 		};
@@ -716,7 +762,8 @@ EAtlasSpatialPublisherMap.prototype.zoomToFeature = function(feature, layersToSh
 
 EAtlasSpatialPublisherMap.prototype._zoomToFeature = function(feature, layersToShow) {
 	// Calculate the extent to zoom to
-	var extent = null;
+	var extent = null,
+		i, layer, layerToShow;
 	if (feature) {
 		// A feature is selected - Zoom to feature
 		extent = feature.getGeometry().getExtent();
@@ -726,8 +773,8 @@ EAtlasSpatialPublisherMap.prototype._zoomToFeature = function(feature, layersToS
 	} else if (layersToShow && layersToShow.length > 0) {
 		// No feature is selected and there is not default extent - Zoom to layers extent (combined)
 		extent = ol.extent.createEmpty();
-		for (var i=0; i<layersToShow.length; i++) {
-			var layer = layersToShow[i];
+		for (i=0; i<layersToShow.length; i++) {
+			layer = layersToShow[i];
 			ol.extent.extend(extent, layer.getSource().getExtent());
 		}
 	}
@@ -740,12 +787,12 @@ EAtlasSpatialPublisherMap.prototype._zoomToFeature = function(feature, layersToS
 		if (layersToShow && layersToShow.length > 0) {
 			for (var layerId in this.geoJSONLayerMap) {
 				if (this.geoJSONLayerMap.hasOwnProperty(layerId)) {
-					var layer = this.geoJSONLayerMap[layerId]["layer"];
+					layer = this.geoJSONLayerMap[layerId]["layer"];
 					if (layer.getVisible()) {
 						// Check to be sure the layer is not in the list of layer to show
 						var ignore = false;
-						for (var i=0; i<layersToShow.length; i++) {
-							var layerToShow = layersToShow[i];
+						for (i=0; i<layersToShow.length; i++) {
+							layerToShow = layersToShow[i];
 							if (layer === layerToShow) {
 								ignore = true;
 								break;
@@ -761,8 +808,8 @@ EAtlasSpatialPublisherMap.prototype._zoomToFeature = function(feature, layersToS
 
 		// Show the layers to show, with an opacity of 0 (unless they are already shown)
 		if (layersToShow.length > 0) {
-			for (var i=0; i<layersToShow.length; i++) {
-				var layerToShow = layersToShow[i];
+			for (i=0; i<layersToShow.length; i++) {
+				layerToShow = layersToShow[i];
 				if (!layerToShow.getVisible()) {
 					layerToShow.setVisible(true);
 					layerToShow.setOpacity(0);
@@ -779,9 +826,9 @@ EAtlasSpatialPublisherMap.prototype._zoomToFeature = function(feature, layersToS
 			duration: this.zoomAnimationDuration,
 			easing: function(layersToHide, layersToShow) {
 				return function(t) {
-					var time = ol.easing.inAndOut(t);
+					var i, time = ol.easing.inAndOut(t);
 					if (layersToShow && layersToShow.length > 0) {
-						for (var i=0; i<layersToShow.length; i++) {
+						for (i=0; i<layersToShow.length; i++) {
 							var layerToShow = layersToShow[i];
 							if (layerToShow.getOpacity() < 1) {
 								layerToShow.setOpacity(time);
@@ -789,7 +836,7 @@ EAtlasSpatialPublisherMap.prototype._zoomToFeature = function(feature, layersToS
 						}
 					}
 					if (layersToHide && layersToHide.length > 0) {
-						for (var i=0; i<layersToHide.length; i++) {
+						for (i=0; i<layersToHide.length; i++) {
 							var layerToHide = layersToHide[i];
 							if (layerToHide.getOpacity() > 0) {
 								layerToHide.setOpacity(1-time);
@@ -807,15 +854,16 @@ EAtlasSpatialPublisherMap.prototype._zoomToFeature = function(feature, layersToS
 			//   for each of the involved layers to fix incomplete animation.
 			callback: function(layersToHide, layersToShow) {
 				return function() {
+					var i;
 					if (layersToHide.length > 0) {
-						for (var i=0; i<layersToHide.length; i++) {
+						for (i=0; i<layersToHide.length; i++) {
 							var layerToHide = layersToHide[i];
 							layerToHide.setVisible(false);
 							layerToHide.setOpacity(0);
 						}
 					}
 					if (layersToShow.length > 0) {
-						for (var i=0; i<layersToShow.length; i++) {
+						for (i=0; i<layersToShow.length; i++) {
 							var layerToShow = layersToShow[i];
 							layerToShow.setVisible(true);
 							layerToShow.setOpacity(1);

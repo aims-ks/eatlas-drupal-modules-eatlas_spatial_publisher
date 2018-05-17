@@ -68,20 +68,6 @@
 
 			<?php if ($action_links): ?><ul class="action-links"><?php print render($action_links); ?></ul><?php endif; ?>
 
-			<script>
-				var extra_content =
-					<?php
-						// Put page blocks HTML into a JavaScript variable
-						// (they will be added to the right panel)
-						foreach (array_keys($page['content']) as $key) {
-							if ($key !== 'system_main' && $key[0] !== '#') {
-								print json_encode(drupal_render($page['content'][$key])) . ' + ';
-							}
-						}
-					?>
-					'';
-			</script>
-
 			<?php print render($page['content']); ?>
 		</div>
 

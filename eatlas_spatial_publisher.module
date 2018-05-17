@@ -315,7 +315,7 @@ function eatlas_spatial_publisher_block_view_alter(&$data, $block) {
 						'in_active_trail' => FALSE, // TODO Need URL addressability
 						'mlid' => $mlid,
 						'plid' => 0,
-						'href' => 'amps', // TODO Find website home page
+						'href' => '404', // Link to the 404 page, to disable the menu link
 						'title' => $site->taxonomy_term->name,
 						'has_children' => TRUE,
 						'expanded' => TRUE,
@@ -335,7 +335,7 @@ function eatlas_spatial_publisher_block_view_alter(&$data, $block) {
 			// (the menu found in $data is a renderable array)
 			$menu_item_output = menu_tree_output($menu_item);
 
-			// Add a CSS class to help applying a custom style to the region sub-menu
+			// Add a CSS class to help applying a custom style and JavaScript events to the region sub-menu
 			$menu_item_output[$mlid]['#attributes']['class'][] = 'eAtlas_spatial_publisher_menu';
 
 			// Add the region sub-menu to the menu
@@ -666,6 +666,21 @@ function eatlas_spatial_publisher_preprocess_page(&$variables) {
 	}
 }
 
+/**
+ * Internal function used to send the base layer configuration to OpenLayers.
+ */
+function eatlas_spatial_publisher_get_baselayer($node) {
+	$baselayer = '';
+
+	if (property_exists($node, 'field_eatlas_publisher_baselayer') &&
+			isset($node->field_eatlas_publisher_baselayer[LANGUAGE_NONE]) &&
+			isset($node->field_eatlas_publisher_baselayer[LANGUAGE_NONE][0]) &&
+			isset($node->field_eatlas_publisher_baselayer[LANGUAGE_NONE][0]['value'])) {
+		$baselayer = $node->field_eatlas_publisher_baselayer[LANGUAGE_NONE][0]['value'];
+	}
+
+	return json_encode($baselayer);
+}
 
 /**
  * PHP functions used to build the JavaScript layers tree.
@@ -688,12 +703,21 @@ function eatlas_spatial_publisher_get_layers_js_array($node) {
 		$style = $node->field_eatlas_publisher_style[LANGUAGE_NONE][0]['value'];
 	}
 
+	$highlight_style = NULL;
+	if (property_exists($node, 'field_eatlas_publisher_hl_style') &&
+			isset($node->field_eatlas_publisher_hl_style[LANGUAGE_NONE]) &&
+			isset($node->field_eatlas_publisher_hl_style[LANGUAGE_NONE][0]) &&
+			isset($node->field_eatlas_publisher_hl_style[LANGUAGE_NONE][0]['value'])) {
+		$highlight_style = $node->field_eatlas_publisher_hl_style[LANGUAGE_NONE][0]['value'];
+	}
+
 	return "[\n" .
 		"	{\n" .
 		"		id: " . json_encode($node->nid) . ",\n" .
 		"		title: " . json_encode($node->title) . ",\n" .
 		"		url: " . json_encode($geoJSON_url) . ",\n" .
-		"		style: " . json_encode($style) . "\n" .
+		"		style: " . json_encode($style) . ",\n" .
+		"		highlight_style: " . json_encode($highlight_style) . "\n" .
 		"	}" .
 		_eatlas_spatial_publisher_get_child_layers_js($node) . "\n" .
 		"]";
@@ -717,13 +741,22 @@ function _eatlas_spatial_publisher_get_child_layers_js($parent_node) {
 				$child_style = $child_node->field_eatlas_publisher_style[LANGUAGE_NONE][0]['value'];
 			}
 
+			$child_highlight_style = NULL;
+			if (property_exists($child_node, 'field_eatlas_publisher_hl_style') &&
+					isset($child_node->field_eatlas_publisher_hl_style[LANGUAGE_NONE]) &&
+					isset($child_node->field_eatlas_publisher_hl_style[LANGUAGE_NONE][0]) &&
+					isset($child_node->field_eatlas_publisher_hl_style[LANGUAGE_NONE][0]['value'])) {
+				$child_highlight_style = $child_node->field_eatlas_publisher_hl_style[LANGUAGE_NONE][0]['value'];
+			}
+
 			$child_layers_str .=
 				", {\n" .
 				"		id: " . json_encode($child_node->nid) . ",\n" .
 				"		parentId: " . json_encode($parent_node->nid) . ",\n" .
 				"		title: " . json_encode($child_node->title) . ",\n" .
 				"		url: " . json_encode($child_url) . ",\n" .
-				"		style: " . json_encode($child_style) . "\n" .
+				"		style: " . json_encode($child_style) . ",\n" .
+				"		highlight_style: " . json_encode($child_highlight_style) . "\n" .
 				"	}" .
 				_eatlas_spatial_publisher_get_child_layers_js($child_node);
 		}
@@ -794,10 +827,10 @@ function eatlas_spatial_publisher_get_feature_bbox($node, $feature_id) {
 	$feature = eatlas_spatial_publisher_get_feature($node, $feature_id);
 
 	$bbox = array(
-		'lonMin' => NULL,  // Min: -180
-		'latMin' => NULL, // Min:  -90
-		'lonMax' => NULL,  // Max:  180
-		'latMax' => NULL, // Max:   90
+		'latMax' => NULL, // North - Max:   90
+		'lonMax' => NULL, // East  - Max:  180
+		'latMin' => NULL, // South - Min:  -90
+		'lonMin' => NULL, // West  - Min: -180
 		'projection' => 'EPSG:4326'
 	);
 	if (isset($feature['geometry']) && isset($feature['geometry']['coordinates'])) {

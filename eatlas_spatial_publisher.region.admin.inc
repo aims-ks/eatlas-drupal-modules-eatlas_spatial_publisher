@@ -169,7 +169,7 @@ function _eatlas_spatial_publisher_region_parse_geojson($geojson_file) {
 	if ($cache = cache_get(EATLAS_SPATIAL_PUBLISHER_FILE_CACHE_PREFIX . $geojson_fid)) {
 		$geojson_str = $cache->data;
 	} else {
-		$geojson_str = eatlas_commons_fix_encoding(file_get_contents($geojson_uri));
+		$geojson_str = eatlas_commons_convert_to_utf8(file_get_contents($geojson_uri));
 		cache_set(EATLAS_SPATIAL_PUBLISHER_FILE_CACHE_PREFIX . $geojson_fid, $geojson_str);
 	}
 

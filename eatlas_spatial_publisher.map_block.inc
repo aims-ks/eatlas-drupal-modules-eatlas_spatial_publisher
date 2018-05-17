@@ -2,8 +2,6 @@
 
 include_once('eatlas_spatial_publisher.constants.inc');
 
-//define('EATLAS_SPATIAL_PUBLISHER_MENU_BLOCK_PREFIX', 'eatlas_publisher_menu_'); // Max 32 char
-
 /**
  * Implements: hook_block_info().
  *   https://api.drupal.org/api/drupal/modules%21block%21block.api.php/function/hook_block_info/7.x

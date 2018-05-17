@@ -9,4 +9,4 @@ creator = Gael Lafond
 ;   This variable is an array, one cell per element. Use "\n" for new lines.
 ;   Those properties are used with release_notes and tags.
 ;   See: https://www.drupal.org/documentation/releases/types
-Bug fixes[] = Change keys for bbox in 'eatlas_spatial_publisher_get_feature_bbox' to lat lon naming.
+Bug fixes[] = Change the top level region menu link to point to the 404 page, to prevent it from going anywhere when someone click it (fix for touch screens).

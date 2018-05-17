@@ -65,6 +65,21 @@ class EAtlas_spatial_publisher_template_context {
 		return $output;
 	}
 
+	function MACRO_ImageURL($image_id, $style='m_preview_strip') {
+		$output = '';
+		$image_file = NULL;
+		if ($image_id !== NULL) {
+			$image_file = file_load($image_id);
+		}
+
+		// Use "frame" module, use includeAttribution
+		if ($image_file) {
+			$output = image_style_url($style, $image_file->uri);
+		}
+
+		return $output;
+	}
+
 	function MACRO_RegionsSiteMap($showOnlyCurrentChildren = FALSE) {
 		return eAtlas_spatial_publisher_regions_site_map($this->site_tid, $this->feature['id'], $showOnlyCurrentChildren);
 	}
@@ -73,7 +88,7 @@ class EAtlas_spatial_publisher_template_context {
 		return empty($this->term) ? NULL : $this->term->tid;
 	}
 
-	function MACRO_RelatedNodes($category=NULL, $collapsible_element_id=NULL, $collapse_limit=3) {
+	function MACRO_RelatedNodes($topic=NULL) {
 		$output = '';
 
 		if (!empty($this->term)) {
@@ -108,33 +123,36 @@ class EAtlas_spatial_publisher_template_context {
 						}
 
 						if (!$prepress) {
-							// Find the "filter" category ID
-							$category_tid = NULL;
-							if (!empty($category)) {
-								$category_terms = taxonomy_get_term_by_name($category, 'article_category');
-								if (!empty($category_terms)) {
-									$category_term = reset($category_terms); // Get first element from the array
-									if (!empty($category_terms)) {
-										$category_tid = $category_term->tid;
+							// Find the "filter" topic ID
+							$topic_tid = NULL;
+							if (!empty($topic)) {
+								$topic_terms = taxonomy_get_term_by_name($topic, 'topics');
+								if (!empty($topic_terms)) {
+									$topic_term = reset($topic_terms); // Get first element from the array
+									if (!empty($topic_term)) {
+										$topic_tid = $topic_term->tid;
 									}
 								}
-								if (!$category_tid) {
+								if (!$topic_tid) {
 									return NULL;
 								}
 							}
 
-							// Find the node category ID
-							$node_category_tid = NULL;
-							if (property_exists($related_node, 'field_category') &&
-									!empty($related_node->field_category) &&
-									!empty($related_node->field_category[LANGUAGE_NONE]) &&
-									!empty($related_node->field_category[LANGUAGE_NONE][0]) &&
-									!empty($related_node->field_category[LANGUAGE_NONE][0]['tid'])) {
-								$node_category_tid = $related_node->field_category[LANGUAGE_NONE][0]['tid'];
+							// Check if the node is associated with the topic ID
+							$node_contains_topic = FALSE;
+							if (property_exists($related_node, 'field_topics') &&
+									!empty($related_node->field_topics) &&
+									!empty($related_node->field_topics[LANGUAGE_NONE])) {
+								foreach ($related_node->field_topics[LANGUAGE_NONE] as $related_node_field_topics_value) {
+									if (!empty($related_node_field_topics_value['tid']) &&
+											$related_node_field_topics_value['tid'] === $topic_tid) {
+										$node_contains_topic = TRUE;
+									}
+								}
 							}
 
-							// Filter out the nodes that doesn't matches the category
-							if ($category_tid === $node_category_tid) {
+							// Filter out the nodes that are not associated with the topic
+							if ($node_contains_topic) {
 								$selected_nodes[] = $related_node;
 							}
 						}
@@ -142,16 +160,8 @@ class EAtlas_spatial_publisher_template_context {
 
 					$nb_nodes = count($selected_nodes);
 					if ($nb_nodes > 0) {
-						$i = 0;
-						for (; $i < $nb_nodes && $i < $collapse_limit; $i++) {
+						for ($i = 0; $i < $nb_nodes; $i++) {
 							$output .= $this->MACRO_RenderNode($selected_nodes[$i], $i+1, $nb_nodes);
-						}
-						if ($i < $nb_nodes) {
-							$output .= '<div id="' . $collapsible_element_id . '">';
-							for (; $i < $nb_nodes; $i++) {
-								$output .= $this->MACRO_RenderNode($selected_nodes[$i], $i+1, $nb_nodes);
-							}
-							$output .= '</div>';
 						}
 					}
 				}
@@ -308,7 +318,7 @@ class EAtlas_spatial_publisher_template_context {
 
 							$output .=
 								'<div class="flexslider-wrapper">' .
-									$this->MACRO_Image($file->fid, $style, $link) .
+									'<a href="' . $link . '" class="flexslider-bgimage" style="background-image:url(\'' . $this->MACRO_ImageURL($file->fid, $style) . '\')"></a>' .
 								'</div>';
 						} else {
 							// Activate the image slider (when the page will be ready)
@@ -333,7 +343,7 @@ class EAtlas_spatial_publisher_template_context {
 								$link = 'media/' . $file->fid;
 								$output .=
 									'<li>' .
-										$this->MACRO_Image($file->fid, $style, $link) .
+										'<a href="' . $link . '" class="flexslider-bgimage" style="background-image:url(\'' . $this->MACRO_ImageURL($file->fid, $style) . '\')"></a>' .
 									'</li>';
 							}
 

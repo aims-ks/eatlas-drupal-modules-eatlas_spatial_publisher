@@ -105,26 +105,6 @@ function _eatlas_spatial_publisher_site_form($form, &$form_state, stdClass $taxo
 		$form['#prefix'] = $region_sets_table . $extra_csv_files_table;
 	}
 
-	// Supplementary CSV files
-/*
-	$form['extra_csv_files'] = array(
-		'#type' => 'managed_file',
-		'#title' => t('Supplementary CSV files'),
-		'#description' => t('The following files are available to the templates, as part of the template context. ' .
-			'If you need to modify one of these file, do not change the name file upon re-uploading since the template rely on the file name.'),
-		'#upload_validators' => array(
-			'file_validate_extensions' => array('csv')
-		),
-//		'#cardinality' => FIELD_CARDINALITY_UNLIMITED,
-//		'cardinality' => FIELD_CARDINALITY_UNLIMITED,
-//		'#multiple' => TRUE,
-//		'#attributes' => array('cardinality' => FIELD_CARDINALITY_UNLIMITED),
-		'#attributes' => array('multiple' => 'multiple'),
-		'#default_value' => array()
-	);
-*/
-
-
 	// Taxonomy field
 	$form['name'] = array(
 		'#type' => 'textfield',

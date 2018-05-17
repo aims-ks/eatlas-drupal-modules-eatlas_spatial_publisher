@@ -11,16 +11,19 @@ if (property_exists($node, 'field_preview') &&
 		isset($node->field_preview[LANGUAGE_NONE][0]['fid'])) {
 	$image_file = file_load($node->field_preview[LANGUAGE_NONE][0]['fid']);
 	if ($image_file) {
-		$image_url = image_style_url('m_preview_strip', $image_file->uri);
+		$image_url = image_style_url('amps_image_slider', $image_file->uri);
 	}
 }
 
-$body = NULL;
-if (property_exists($node, 'body') &&
-		isset($node->body[LANGUAGE_NONE]) &&
-		isset($node->body[LANGUAGE_NONE][0]) &&
-		isset($node->body[LANGUAGE_NONE][0]['value'])) {
-	$body = $node->body[LANGUAGE_NONE][0]['value'];
+$body_field = field_view_field('node', $node, 'body', 'default');
+$body = render($body_field);
+
+$rendered_blocks = '';
+$content_blocks = block_get_blocks_by_region('content');
+foreach ($content_blocks as $key => $value) {
+	if ($key !== 'system_main' && $key[0] !== '#') {
+		$rendered_blocks .= render($value);
+	}
 }
 
 // Determine the content of the map_panel
@@ -29,7 +32,17 @@ if (property_exists($node, 'body') &&
 //   having to execute complex JavaScript.
 //   It might also help with accessibility
 //   (browser without JavaScript capabilities).
-$initial_page_content = $body;
+$initial_page_content = '<div class="panel-header">' .
+	'<h2 class="title">' . $node->title . '</h2>' .
+	'</div>' .
+	($image_url ?
+		'<div class="flexslider-wrapper">' .
+			'<div class="flexslider-bgimage" style="background-image:url(\'' . $image_url . '\')"></div>' .
+		'</div>' : '') .
+	($body ? $body : '') .
+	// Add Drupal page blocks
+	$rendered_blocks;
+
 $feature_id = isset($_GET['featureId']) ? filter_xss($_GET['featureId']) : NULL;
 $feature_node = NULL;
 if ($feature_id) {
@@ -49,13 +62,15 @@ $context = new EAtlas_spatial_publisher_template_context($node, NULL);
 		<div class="map_panel">
 			<div class="loading"></div>
 			<div class="content-wrapper" id="content-top">
-				<div class="content"><?php
-					if ($feature_id) {
-						_eatlas_spatial_publisher_regions_set_get_feature_template($feature_node, $feature_id);
-					} else {
-						print $initial_page_content;
-					}
-				?></div>
+				<div class="content">
+					<?php
+						if ($feature_id) {
+							_eatlas_spatial_publisher_regions_set_get_feature_template($feature_node, $feature_id);
+						} else {
+							print $initial_page_content;
+						}
+					?>
+				</div>
 				<div class="goto-top">
 					<a class="goto-top-button" href="#content-top"><img src="<?php print $eatlas_spatial_publisher_path; ?>/img/top-arrow.svg" style="display: block; margin: 0 auto;">TOP</a>
 				</div>
@@ -65,14 +80,18 @@ $context = new EAtlas_spatial_publisher_template_context($node, NULL);
 </div>
 
 <script>
-	// Create a EAtlasSpatialPublisherMap instance and initialise it.
-	// NOTE: The EAtlasSpatialPublisherMap class is defined in "js/EAtlasSpatialPublisherMap.js"
 	(function ($) {
 		$(document).ready(function() {
+			// Trigger 'content-change' event, to initialise event listeners.
+			$('.eatlas_spatial_publisher_map .map_panel').trigger('content-change');
+
+			// Create a EAtlasSpatialPublisherMap instance and initialise it.
+			// NOTE: The EAtlasSpatialPublisherMap class is defined in "js/EAtlasSpatialPublisherMap.js"
 			var currentState = null;
 
 			var eAtlasSpatialPublisherMap = new EAtlasSpatialPublisherMap({
 				target: 'map-wrapper',
+				baseLayer: <?php print eatlas_spatial_publisher_get_baselayer($node); ?>,
 				layers: <?php print eatlas_spatial_publisher_get_layers_js_array($node); ?>,
 				bbox: <?php print eatlas_spatial_publisher_get_initial_zoom_bbox($node); ?>,
 				panelCss: {
@@ -96,7 +115,9 @@ $context = new EAtlas_spatial_publisher_template_context($node, NULL);
 				}
 			});
 			currentState = getURLParameters();
-			loadState(currentState);
+			if (currentState.featureId) {
+				eAtlasSpatialPublisherMap.zoomToFeatureId(currentState.featureId);
+			}
 
 			function changeState(state) {
 				var urlPath = '';
@@ -155,6 +176,18 @@ $context = new EAtlas_spatial_publisher_template_context($node, NULL);
 				if (layer && feature) {
 					var nodeId = layer.config.id;
 					var featureId = feature.getId();
+
+					// If there is only one children, zoom to that child
+					var children = feature.get('_childNodes');
+					if (children != null && children.length === 1) {
+						while (children.properties != null && children.properties._childNodes != null && children.properties._childNodes.length === 1) {
+							children = children.properties._childNodes;
+						}
+						var uniqueChild = children[0];
+						nodeId = uniqueChild.nid;
+						featureId = uniqueChild.id;
+					}
+
 					newState = {
 						'featureId': featureId
 					};
@@ -174,31 +207,14 @@ $context = new EAtlas_spatial_publisher_template_context($node, NULL);
 			}
 
 			function setDefaultPanelContent() {
-				var panelContent = '<div class="panel-header">' +
-						'<h2 class="title">' + <?php print json_encode($node->title); ?> + '</h2>' +
-					'</div>' +
-					<?php
-						print $image_url ?
-							json_encode("<img src=\"$image_url\" />") :
-							"''";
-					?> +
-					<?php
-						print $body ?
-							json_encode($body) :
-							"''";
-					?> +
-					// Add Drupal page blocks (the variable is created by the "page" template)
-					extra_content;
-
+				var panelContent = <?php print json_encode($initial_page_content); ?>;
 				eAtlasSpatialPublisherMap.setPanelContent(panelContent);
 
 				// Add the "cog" to edit blocks (if any)
 				// NOTE: The "cog" is added by JavaScript. Since this panel
 				//   is drawn afterwards, the script needs to be ran again.
-				if (extra_content) {
-					if (Drupal.behaviors.contextualLinks) {
-						Drupal.behaviors.contextualLinks.attach(document);
-					}
+				if (Drupal.behaviors.contextualLinks) {
+					Drupal.behaviors.contextualLinks.attach(document);
 				}
 			}
 

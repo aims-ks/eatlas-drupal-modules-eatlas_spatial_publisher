@@ -119,11 +119,29 @@ function eatlas_spatial_publisher_node_type_insert($content_type) {
 		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 
 		_eatlas_spatial_publisher_create_node_field(array(
+			'field_name' => 'field_eatlas_publisher_baselayer', // Max 32 characters!
+			'type' => 'text_long',
+			'widget' => array('type' => 'text_textarea'),
+			'label' => t('Map Base layer'),
+			'description' => t('An OpenLayer layer object to use as a Base layer. If none is specified, OSM layer will be used.'),
+			'required' => FALSE
+		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+
+		_eatlas_spatial_publisher_create_node_field(array(
 			'field_name' => 'field_eatlas_publisher_style', // Max 32 characters!
 			'type' => 'text_long',
 			'widget' => array('type' => 'text_textarea'),
 			'label' => t('Style'),
 			'description' => t('The style used to draw the polygons.'),
+			'required' => FALSE
+		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+
+		_eatlas_spatial_publisher_create_node_field(array(
+			'field_name' => 'field_eatlas_publisher_hl_style', // Max 32 characters!
+			'type' => 'text_long',
+			'widget' => array('type' => 'text_textarea'),
+			'label' => t('Highlight style'),
+			'description' => t('The style used when the mouse move over a polygon. If none is specified, the lines will appear 3x thicker.'),
 			'required' => FALSE
 		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 
@@ -153,12 +171,61 @@ function eatlas_spatial_publisher_node_type_insert($content_type) {
 	}
 }
 
+function _eatlas_spatial_publisher_regions_set_get_geojson(stdClass $node) {
+	// We are returning JSON, so tell the browser.
+	drupal_add_http_header('Content-Type', 'application/json');
+
+	$geojson_content = _eatlas_spatial_publisher_regions_set_get_geojson_content($node);
+
+
+	// ADD CHILDREN FEATURES
+	$feature_fk = 'Network_ID'; // TODO Get from node
+	// Build the feature map
+	$feature_map = array();
+	if ($geojson_content && $geojson_content['features']) {
+		foreach($geojson_content['features'] as &$feature) {
+			if (isset($feature['properties'][$feature_fk])) {
+				$feature['properties']['_childNodes'] = array();
+				$feature['title'] = isset($feature['properties']['Network']) ? $feature['properties']['Network'] : t('Untitled');
+				$feature['nid'] = $node->nid;
+				$feature_map[$feature['properties'][$feature_fk]] = &$feature;
+			}
+		}
+	}
+
+	$child_nodes = eatlas_spatial_publisher_region_set_load_children($node);
+	if ($child_nodes) {
+		foreach($child_nodes as $child_node) {
+			$child_features_arr = _eatlas_spatial_publisher_regions_set_get_geojson_content($child_node);
+			if ($child_features_arr && $child_features_arr['features']) {
+				foreach($child_features_arr['features'] as $child_feature) {
+					if (isset($child_feature['properties'][$feature_fk])) {
+						$parent = &$feature_map[$child_feature['properties'][$feature_fk]];
+						if ($parent) {
+							$child_feature['title'] = isset($child_feature['properties']['MPA_NAME']) ? $child_feature['properties']['MPA_NAME'] : t('Untitled');
+							$child_feature['nid'] = $child_node->nid;
+							$parent['properties']['_childNodes'][] = $child_feature;
+						}
+					}
+				}
+			}
+		}
+	}
+
+
+
+	if (!empty($geojson_content)) {
+		// Merge the CSV metadata to the GeoJSON features
+		print drupal_json_encode($geojson_content);
+	}
+}
+
 function _eatlas_spatial_publisher_regions_set_get_geojson_content(stdClass $node) {
 	$geojson_file_id = _eatlas_spatial_publisher_region_get_fid($node, 'field_eatlas_publisher_geojson');
 	$csv_file_id = _eatlas_spatial_publisher_region_get_fid($node, 'field_eatlas_publisher_csv');
 
 	// GeoJSON
-	$geojson_content = NULL;
+	$geojson_content = array();
 	if ($geojson_file_id !== NULL) {
 		// Load the Drupal file object associated with the file ID
 		$geojson_file = file_load($geojson_file_id);
@@ -183,17 +250,6 @@ function _eatlas_spatial_publisher_regions_set_get_geojson_content(stdClass $nod
 	}
 
 	return NULL;
-}
-
-function _eatlas_spatial_publisher_regions_set_get_geojson(stdClass $node) {
-	// We are returning JSON, so tell the browser.
-	drupal_add_http_header('Content-Type', 'application/json');
-
-	$geojson_content = _eatlas_spatial_publisher_regions_set_get_geojson_content($node);
-	if (!empty($geojson_content)) {
-		// Merge the CSV metadata to the GeoJSON features
-		print drupal_json_encode($geojson_content);
-	}
 }
 
 function eatlas_spatial_publisher_regions_set_get_feature_tree($site_tid) {
@@ -277,15 +333,20 @@ function _eatlas_spatial_publisher_regions_set_get_feature_template($node, $feat
 	// http://aims.ereefs.localhost/eatlas_spatial_publisher/4003/feature/qld
 
 	$feature = eatlas_spatial_publisher_get_feature($node, $feature_id);
+	print '<!-- Apply same style as the body field of an article (adjust line-height) -->' . "\n";
+	print '<div class="field field-name-body field-type-text-with-summary">' . "\n";
+
 	if ($node && $feature) {
 		// Output the feature in the source, to be used as a reference while making the template
 		// TODO Give access to this in the backend, when making the template!
-		print "<!--\nFEATURE\n" . print_r($feature, TRUE) . "\n-->";
+		//print "<!--\nFEATURE\n" . print_r($feature, TRUE) . "\n-->";
 
 		eAtlas_spatial_publisher_eval_template($node, $feature);
 	} else {
-		print '<div>Feature not found.</div>';
+		print '<div>Feature not found.</div>' . "\n";
 	}
+
+	print '</div>' . "\n";
 }
 
 /**
