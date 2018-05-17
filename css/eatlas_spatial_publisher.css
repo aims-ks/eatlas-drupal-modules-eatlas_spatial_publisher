@@ -178,8 +178,13 @@
   position: absolute;
   bottom: 0;
   right: 0;
-  background-color: rgba(0,0,0,0.4);
-  color: #aaaaaa;
+  background-color: rgba(0,0,0,0.2);
+  color: rgba(255,255,255,0.7);
+}
+
+.eatlas_spatial_publisher_map .flexslider-wrapper .media-license a {
+  color: rgba(255,255,255,0.7);
+  text-decoration: underline;
 }
 
 .eatlas_spatial_publisher_map .flexslider-wrapper .media-license .cc,
