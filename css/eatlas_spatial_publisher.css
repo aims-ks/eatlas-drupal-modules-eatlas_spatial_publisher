@@ -173,9 +173,10 @@
 
 .eatlas_spatial_publisher_map .flexslider-wrapper .media-license {
   font-size: 10px;
+  line-height: 14px;
   padding: 4px;
   position: absolute;
-  bottom: 5px;
+  bottom: 0;
   right: 0;
   background-color: rgba(0,0,0,0.4);
   color: #aaaaaa;
