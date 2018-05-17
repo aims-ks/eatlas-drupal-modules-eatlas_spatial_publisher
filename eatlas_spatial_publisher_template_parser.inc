@@ -1,4 +1,6 @@
 <?php
+// get module constants, e.g. for max images in slider
+include_once('eatlas_spatial_publisher.constants.inc');
 
 /**
  * Define the class which is sent to the template.
@@ -339,12 +341,18 @@ class EAtlas_spatial_publisher_template_context {
 									'<div class="flexslider">' .
 										'<ul class="slides">';
 
+							$counter = 0;
 							foreach ($files as $file) {
 								$link = 'media/' . $file->fid;
 								$output .=
 									'<li>' .
 										'<a href="' . $link . '" class="flexslider-bgimage" style="background-image:url(\'' . $this->MACRO_ImageURL($file->fid, $style) . '\')"></a>' .
 									'</li>';
+
+								$counter++;
+                if ($counter >= EATLAS_SPATIAL_PUBLISHER_SLIDER_MAX_IMAGES) {
+                  break;
+                }
 							}
 
 							$output .=
