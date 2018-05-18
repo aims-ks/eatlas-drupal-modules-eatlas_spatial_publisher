@@ -171,26 +171,20 @@
   position: relative;
 }
 
-.eatlas_spatial_publisher_map .flexslider-wrapper .media-license {
+.eatlas_spatial_publisher_map .flexslider-wrapper .media-attribution {
   font-size: 10px;
   line-height: 14px;
   padding: 4px;
   position: absolute;
   bottom: 0;
   right: 0;
-  background-color: rgba(0,0,0,0.2);
-  color: rgba(255,255,255,0.7);
+  background-color: rgba(0,0,0,0.4);
+  color: rgba(255,255,255,0.8);
 }
 
-.eatlas_spatial_publisher_map .flexslider-wrapper .media-license a {
+.eatlas_spatial_publisher_map .flexslider-wrapper .media-attribution a {
   color: rgba(255,255,255,0.7);
   text-decoration: underline;
-}
-
-.eatlas_spatial_publisher_map .flexslider-wrapper .media-license .cc,
-.eatlas_spatial_publisher_map .flexslider-wrapper .media-license .cc_nd,
-.eatlas_spatial_publisher_map .flexslider-wrapper .media-license .cc_nc {
-  margin-bottom: -3px;
 }
 
 /* Set the images in the slider to take 100% of the available space */

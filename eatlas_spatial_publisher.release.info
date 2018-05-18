@@ -11,3 +11,5 @@ creator = Gael Lafond
 ;   See: https://www.drupal.org/documentation/releases/types
 New features[] = Limit maximum number of images in slider
 New features[] = Add attribution to slider images
+
+Bug fixes[] = Fix margin issue on network headines
