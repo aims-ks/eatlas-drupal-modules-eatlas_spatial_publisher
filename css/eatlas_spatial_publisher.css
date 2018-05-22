@@ -89,11 +89,6 @@
 	padding: 0;
 }
 
-.eatlas_spatial_publisher_map .map_panel .content .panel-header h2.title {
-	margin-top: 0;
-	font-size: 2em;
-}
-
 .eatlas_spatial_publisher_map .map_panel_button {
 	display: none; /* Hidden when the page loads */
 
