@@ -707,7 +707,7 @@ EAtlasSpatialPublisherMap.prototype.zoomToFeatureId = function(featureId) {
 };
 
 EAtlasSpatialPublisherMap.prototype.getParentLayer = function(layer) {
-	if (!layer.hasOwnProperty("config") || !layer.config.hasOwnProperty("parentId")) {
+	if (!layer.hasOwnProperty("config") || !layer.config.hasOwnProperty("parentId") || !this.geoJSONLayerMap[layer.config.parentId]["layer"]) {
 		return this.rootGeoJSONLayer;
 	}
 	return this.geoJSONLayerMap[layer.config.parentId]["layer"];

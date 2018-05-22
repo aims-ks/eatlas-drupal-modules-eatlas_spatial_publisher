@@ -529,36 +529,38 @@ function _eAtlas_spatial_publisher_regions_site_submenu_tree_page_data($menu_nam
 
 	if ($feature_branch) {
 		foreach($feature_branch as $feature) {
-			$mlid = 'eatlas_publisher_menu_item_' . $feature['id'];
+			if ($feature && isset($feature['id'])) {
+				$mlid = 'eatlas_publisher_menu_item_' . $feature['id'];
 
-			$child_menu = isset($feature['children']) ?
-					_eAtlas_spatial_publisher_regions_site_submenu_tree_page_data($menu_name, $feature['children'], $active_feature_id, $mlid) :
-					array();
+				$child_menu = isset($feature['children']) ?
+						_eAtlas_spatial_publisher_regions_site_submenu_tree_page_data($menu_name, $feature['children'], $active_feature_id, $mlid) :
+						array();
 
-			// The menu item can be ignored if specified in the properties
-			$ignore = isset($feature['properties']['menu_ignore']) && $feature['properties']['menu_ignore'];
+				// The menu item can be ignored if specified in the properties
+				$ignore = isset($feature['properties']['menu_ignore']) && $feature['properties']['menu_ignore'];
 
-			if (!$ignore) {
-				$menu_links[$mlid] = array(
-					'link' => array(
-						'menu_name' => $menu_name,
-						'access' => TRUE,
-						'hidden' => FALSE,
-						'in_active_trail' => FALSE, // TODO
-						'mlid' => $mlid,
-						'plid' => $parent_id ? $parent_id : 0,
-						'href' => 'amps',
-						'localized_options' => array(
-							'query' => array(
-								'featureId' => $feature['id']
-							)
+				if (!$ignore) {
+					$menu_links[$mlid] = array(
+						'link' => array(
+							'menu_name' => $menu_name,
+							'access' => TRUE,
+							'hidden' => FALSE,
+							'in_active_trail' => FALSE, // TODO
+							'mlid' => $mlid,
+							'plid' => $parent_id ? $parent_id : 0,
+							'href' => 'amps',
+							'localized_options' => array(
+								'query' => array(
+									'featureId' => $feature['id']
+								)
+							),
+							'title' => isset($feature['title']) ? $feature['title'] : 'Untitled',
+							'has_children' => !empty($child_menu),
+							'expanded' => !empty($child_menu)
 						),
-						'title' => $feature['title'],
-						'has_children' => !empty($child_menu),
-						'expanded' => !empty($child_menu)
-					),
-					'below' => $child_menu
-				);
+						'below' => $child_menu
+					);
+				}
 			}
 		}
 	}

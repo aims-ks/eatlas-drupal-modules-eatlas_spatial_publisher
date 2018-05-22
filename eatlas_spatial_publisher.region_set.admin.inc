@@ -284,11 +284,16 @@ function eatlas_spatial_publisher_regions_set_get_feature_tree($site_tid) {
 						foreach($child_features_arr['features'] as $child_feature) {
 							if (isset($child_feature['properties'][$feature_fk])) {
 								$parent = &$feature_map[$child_feature['properties'][$feature_fk]];
-								if ($parent) {
-									$child_feature['title'] = isset($child_feature['properties']['MPA_NAME']) ? $child_feature['properties']['MPA_NAME'] : t('Untitled');
-									$child_feature['node'] = $child_node;
-									$parent['children'][] = $child_feature;
+								// If the parent was not found, create an artificial parent to hold the child
+								if (!$parent) {
+									$parent = array(
+										'children' => array()
+									);
+									$feature_map[$child_feature['properties'][$feature_fk]] = $parent;
 								}
+								$child_feature['title'] = isset($child_feature['properties']['MPA_NAME']) ? $child_feature['properties']['MPA_NAME'] : t('Untitled');
+								$child_feature['node'] = $child_node;
+								$parent['children'][] = $child_feature;
 							}
 						}
 					}

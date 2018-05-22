@@ -12,4 +12,4 @@ creator = Gael Lafond
 New features[] = Limit maximum number of images in slider
 New features[] = Add attribution to slider images
 
-Bug fixes[] = Fix margin issue on network headines
+Bug fixes[] = Fix "Feature not found" when parent doesn't exists
