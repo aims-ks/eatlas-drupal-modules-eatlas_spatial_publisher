@@ -33,7 +33,7 @@ foreach ($content_blocks as $key => $value) {
 //   It might also help with accessibility
 //   (browser without JavaScript capabilities).
 $initial_page_content = '<div class="panel-header">' .
-	'<h2 class="title">' . $node->title . '</h2>' .
+	'<h1 class="title">' . $node->title . '</h1>' .
 	'</div>' .
 	($image_url ?
 		'<div class="flexslider-wrapper">' .
