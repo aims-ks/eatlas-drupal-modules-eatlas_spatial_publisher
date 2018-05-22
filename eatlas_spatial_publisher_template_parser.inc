@@ -321,7 +321,7 @@ class EAtlas_spatial_publisher_template_context {
 							$output .=
 								'<div class="flexslider-wrapper">' .
 									'<a href="' . $link . '" class="flexslider-bgimage" style="background-image:url(\'' . $this->MACRO_ImageURL($file->fid, $style) . '\')"></a>' .
-                					'<div class="media-attribution">' . theme('eatlas_media_gallery_fixes_attribution', array('prefix' => '', 'file' => $file)) . '</div>' .
+									'<div class="media-attribution">' . theme('eatlas_media_gallery_fixes_attribution', array('prefix' => '', 'file' => $file)) . '</div>' .
 								'</div>';
 						} else {
 							// Activate the image slider (when the page will be ready)
@@ -348,13 +348,13 @@ class EAtlas_spatial_publisher_template_context {
 								$output .=
 									'<li>' .
 										'<a href="' . $link . '" class="flexslider-bgimage" style="background-image:url(\'' . $this->MACRO_ImageURL($file->fid, $style) . '\')"></a>' .
-                    '<div class="media-attribution">' . theme('eatlas_media_gallery_fixes_attribution', array('', 'file' => $file)) . '</div>' .
+										'<div class="media-attribution">' . theme('eatlas_media_gallery_fixes_attribution', array('', 'file' => $file)) . '</div>' .
 									'</li>';
 
 								$counter++;
-                if ($counter >= EATLAS_SPATIAL_PUBLISHER_SLIDER_MAX_IMAGES) {
-                  break;
-                }
+								if ($counter >= EATLAS_SPATIAL_PUBLISHER_SLIDER_MAX_IMAGES) {
+									break;
+								}
 							}
 
 							$output .=
