@@ -801,30 +801,46 @@ function eatlas_spatial_publisher_get_initial_zoom_bbox($node) {
  * API functions *
  *****************/
 
-function eatlas_spatial_publisher_get_feature($node, $feature_id) {
-	$feature = NULL;
-	if ($node) {
-		$geojson_content = _eatlas_spatial_publisher_regions_set_get_geojson_content($node);
+function eatlas_spatial_publisher_get_feature($site_tid, $feature_id) {
+	$feature_tree = eatlas_spatial_publisher_regions_set_get_feature_tree($site_tid);
+	return _eatlas_spatial_publisher_get_feature($feature_tree, $feature_id);
+}
 
-		if ($geojson_content && isset($geojson_content['features'])) {
-			// Find the feature in the GeoJSON file
-			$features = $geojson_content['features'];
-			if ($features) {
-				foreach ($features as $current_feature) {
-					if ($current_feature['id'] === $feature_id) {
-						$feature = $current_feature;
-						break;
+// Internal function
+// Look for a feature ID in the feature tree / branch (recursive)
+function _eatlas_spatial_publisher_get_feature($feature_branch, $feature_id) {
+	if ($feature_branch) {
+		foreach($feature_branch as $feature) {
+			if ($feature && isset($feature['id'])) {
+				if ($feature['id'] === $feature_id) {
+					return $feature;
+				}
+				if (isset($feature['children'])) {
+					$feature_found = _eatlas_spatial_publisher_get_feature($feature['children'], $feature_id);
+					if ($feature_found) {
+						return $feature_found;
 					}
 				}
 			}
 		}
 	}
 
-	return $feature;
+	return NULL;
+}
+
+function eatlas_spatial_publisher_get_feature_from_node($node, $feature_id) {
+	if ($node) {
+		$site_tid = $node->field_eatlas_publisher_tid[LANGUAGE_NONE][0]['value'];
+		if ($site_tid) {
+			return eatlas_spatial_publisher_get_feature($site_tid, $feature_id);
+		}
+	}
+
+	return NULL;
 }
 
 function eatlas_spatial_publisher_get_feature_bbox($node, $feature_id) {
-	$feature = eatlas_spatial_publisher_get_feature($node, $feature_id);
+	$feature = eatlas_spatial_publisher_get_feature_from_node($node, $feature_id);
 
 	$bbox = array(
 		'latMax' => NULL, // North - Max:   90

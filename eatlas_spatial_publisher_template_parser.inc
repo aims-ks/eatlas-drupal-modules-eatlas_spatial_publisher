@@ -478,6 +478,17 @@ class EAtlas_spatial_publisher_template_context {
 		return $raw_url;
 	}
 
+	// Return the feature, if it exists.
+	// Used to determine if a link should be added to the breadcrumbs.
+	function getFeature($feature_id) {
+		$feature = eatlas_spatial_publisher_get_feature($this->site_tid, $feature_id);
+		// Do not return features that have a single child. We want to bypass those.
+		if (isset($feature['children']) && count($feature['children']) === 1) {
+			return null;
+		}
+		return $feature;
+	}
+
 }
 
 function eAtlas_spatial_publisher_regions_site_map($site_tid, $active_feature_id = NULL, $showOnlyCurrentChildren = FALSE) {
@@ -532,9 +543,24 @@ function _eAtlas_spatial_publisher_regions_site_submenu_tree_page_data($menu_nam
 			if ($feature && isset($feature['id'])) {
 				$mlid = 'eatlas_publisher_menu_item_' . $feature['id'];
 
-				$child_menu = isset($feature['children']) ?
-						_eAtlas_spatial_publisher_regions_site_submenu_tree_page_data($menu_name, $feature['children'], $active_feature_id, $mlid) :
-						array();
+				$href = 'amps'; // TODO Configure where the root of the map should be (add field to the admin interface)
+				$href_options = array(
+					'query' => array(
+						'featureId' => $feature['id']
+					)
+				);
+
+				$child_menu = null;
+				if (isset($feature['children'])) {
+					$child_menu = _eAtlas_spatial_publisher_regions_site_submenu_tree_page_data($menu_name, $feature['children'], $active_feature_id, $mlid);
+					// Disable link in the navigation menu when the node contains only 1 child
+					if (count($feature['children']) === 1) {
+						$href = '404'; // 404 is managed by the theme, it's a little hack used to disable links
+						$href_options = null; // Remove link options. It's not necessary, but just to be clean...
+					}
+				} else {
+					$child_menu = array();
+				}
 
 				// The menu item can be ignored if specified in the properties
 				$ignore = isset($feature['properties']['menu_ignore']) && $feature['properties']['menu_ignore'];
@@ -545,15 +571,11 @@ function _eAtlas_spatial_publisher_regions_site_submenu_tree_page_data($menu_nam
 							'menu_name' => $menu_name,
 							'access' => TRUE,
 							'hidden' => FALSE,
-							'in_active_trail' => FALSE, // TODO
+							'in_active_trail' => FALSE,
 							'mlid' => $mlid,
 							'plid' => $parent_id ? $parent_id : 0,
-							'href' => 'amps',
-							'localized_options' => array(
-								'query' => array(
-									'featureId' => $feature['id']
-								)
-							),
+							'href' => $href,
+							'localized_options' => $href_options,
 							'title' => isset($feature['title']) ? $feature['title'] : 'Untitled',
 							'has_children' => !empty($child_menu),
 							'expanded' => !empty($child_menu)

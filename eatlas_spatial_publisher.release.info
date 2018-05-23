@@ -3,11 +3,11 @@
 ;type = project_module
 
 ; creator: Name of the developer(s) of the module (free text)
-creator = Gael Lafond
+creator = Gael Lafond, Marc Hammerton
 
 ; Bug fixes, New features & Security update: What has changed since last release (free text array)
 ;   This variable is an array, one cell per element. Use "\n" for new lines.
 ;   Those properties are used with release_notes and tags.
 ;   See: https://www.drupal.org/documentation/releases/types
-New features[] = Remove headline styling
-New features[] = Use h1 for main headline
+Bug fixes[] = Remove link to empty network from the menu (network containing a single child)
+Bug fixes[] = Create a "getFeature" method in the template context, that returns the feature associated with a feature ID if the feature exists. If the feature is a branch containing a single node, it doesn't return the feature (the feature needs to be bypass). This is used in the template to determine if a branch (Network) needs to be displayed in the breadcrumbs.

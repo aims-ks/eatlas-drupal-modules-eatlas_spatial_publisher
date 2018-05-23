@@ -337,7 +337,7 @@ function _eatlas_spatial_publisher_regions_set_find_feature_node($feature_tree, 
 function _eatlas_spatial_publisher_regions_set_get_feature_template($node, $feature_id) {
 	// http://aims.ereefs.localhost/eatlas_spatial_publisher/4003/feature/qld
 
-	$feature = eatlas_spatial_publisher_get_feature($node, $feature_id);
+	$feature = eatlas_spatial_publisher_get_feature_from_node($node, $feature_id);
 	print '<!-- Apply same style as the body field of an article (adjust line-height) -->' . "\n";
 	print '<div class="field field-name-body field-type-text-with-summary">' . "\n";
 
