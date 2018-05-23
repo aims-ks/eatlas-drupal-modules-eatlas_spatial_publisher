@@ -11,7 +11,13 @@ if (property_exists($node, 'field_preview') &&
 		isset($node->field_preview[LANGUAGE_NONE][0]['fid'])) {
 	$image_file = file_load($node->field_preview[LANGUAGE_NONE][0]['fid']);
 	if ($image_file) {
-		$image_url = image_style_url('amps_image_slider', $image_file->uri);
+	  // @ToDo remove 'amps' reference. The style value should be dynamic
+		$image_url = image_style_url('amps_header_image', $image_file->uri);
+		$imageTitleValues = field_get_items('file', $image_file, 'media_title');
+		$imageTitle = '';
+		if (isset($imageTitleValues[0]['safe_value'])) {
+		  $imageTitle = $imageTitleValues[0]['safe_value'];
+		}
 	}
 }
 
@@ -35,9 +41,9 @@ foreach ($content_blocks as $key => $value) {
 $initial_page_content = '<div class="panel-header">' .
 	'<h1 class="title">' . $node->title . '</h1>' .
 	'</div>' .
-	($image_url ?
+	($image_url && $imageTitle ?
 		'<div class="flexslider-wrapper">' .
-			'<div class="flexslider-bgimage" style="background-image:url(\'' . $image_url . '\')"></div>' .
+			'<div class="flexslider-image"><img src="' . $image_url . '" alt="' . $imageTitle . '" title="' . $imageTitle . '"></div>' .
 		'</div>' : '') .
 	($body ? $body : '') .
 	// Add Drupal page blocks

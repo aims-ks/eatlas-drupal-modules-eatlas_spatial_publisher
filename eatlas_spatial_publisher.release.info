@@ -9,5 +9,4 @@ creator = Gael Lafond, Marc Hammerton
 ;   This variable is an array, one cell per element. Use "\n" for new lines.
 ;   Those properties are used with release_notes and tags.
 ;   See: https://www.drupal.org/documentation/releases/types
-Bug fixes[] = Remove link to empty network from the menu (network containing a single child)
-Bug fixes[] = Create a "getFeature" method in the template context, that returns the feature associated with a feature ID if the feature exists. If the feature is a branch containing a single node, it doesn't return the feature (the feature needs to be bypass). This is used in the template to determine if a branch (Network) needs to be displayed in the breadcrumbs.
+Bug fixes[] = Use image tag instead of background image for flex slider

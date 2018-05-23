@@ -82,6 +82,23 @@ class EAtlas_spatial_publisher_template_context {
 		return $output;
 	}
 
+  function MACRO_ImageTitle($image_id) {
+    $output = '';
+    $image_file = NULL;
+    if ($image_id !== NULL) {
+      $image_file = file_load($image_id);
+    }
+
+    if ($image_file) {
+      $imageTitleValues = field_get_items('file', $image_file, 'media_title');
+      if (isset($imageTitleValues[0]['safe_value'])) {
+        $output = $imageTitleValues[0]['safe_value'];
+      }
+    }
+
+    return $output;
+  }
+
 	function MACRO_RegionsSiteMap($showOnlyCurrentChildren = FALSE) {
 		return eAtlas_spatial_publisher_regions_site_map($this->site_tid, $this->feature['id'], $showOnlyCurrentChildren);
 	}
@@ -320,8 +337,8 @@ class EAtlas_spatial_publisher_template_context {
 
 							$output .=
 								'<div class="flexslider-wrapper">' .
-									'<a href="' . $link . '" class="flexslider-bgimage" style="background-image:url(\'' . $this->MACRO_ImageURL($file->fid, $style) . '\')"></a>' .
-									'<div class="media-attribution">' . theme('eatlas_media_gallery_fixes_attribution', array('prefix' => '', 'file' => $file)) . '</div>' .
+									'<a href="' . $link . '" class="flexslider-image"><img src="' . $this->MACRO_ImageURL($file->fid, $style) . '" alt="' . $this->MACRO_ImageTitle($file->fid) . '" title="' . $this->MACRO_ImageTitle($file->fid) . '"></a>' .
+                					'<div class="media-attribution">' . theme('eatlas_media_gallery_fixes_attribution', array('prefix' => '', 'file' => $file)) . '</div>' .
 								'</div>';
 						} else {
 							// Activate the image slider (when the page will be ready)
@@ -347,8 +364,8 @@ class EAtlas_spatial_publisher_template_context {
 								$link = 'media/' . $file->fid;
 								$output .=
 									'<li>' .
-										'<a href="' . $link . '" class="flexslider-bgimage" style="background-image:url(\'' . $this->MACRO_ImageURL($file->fid, $style) . '\')"></a>' .
-										'<div class="media-attribution">' . theme('eatlas_media_gallery_fixes_attribution', array('', 'file' => $file)) . '</div>' .
+										'<a href="' . $link . '" class="flexslider-image"><img src="' . $this->MACRO_ImageURL($file->fid, $style) . '" alt="' . $this->MACRO_ImageTitle($file->fid) . '" title="' . $this->MACRO_ImageTitle($file->fid) . '"></a>' .
+                    '<div class="media-attribution">' . theme('eatlas_media_gallery_fixes_attribution', array('', 'file' => $file)) . '</div>' .
 									'</li>';
 
 								$counter++;

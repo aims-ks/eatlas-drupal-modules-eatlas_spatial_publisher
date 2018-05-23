@@ -182,13 +182,14 @@
   text-decoration: underline;
 }
 
+.eatlas_spatial_publisher_map .flexslider-wrapper .flexslider-image {
+  display: block;
+  line-height: 0;
+}
+
 /* Set the images in the slider to take 100% of the available space */
-.eatlas_spatial_publisher_map .flexslider-wrapper .flexslider-bgimage {
-	display: block;
+.eatlas_spatial_publisher_map .flexslider-wrapper .flexslider-image img {
 	width: 100%;
-	height: 300px;
-	background-position: center;
-	background-size: cover;
 }
 
 .eatlas_spatial_publisher_map .node-block {
