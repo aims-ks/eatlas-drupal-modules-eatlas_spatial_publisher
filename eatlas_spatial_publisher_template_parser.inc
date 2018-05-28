@@ -393,6 +393,13 @@ class EAtlas_spatial_publisher_template_context {
 		return isset($properties[$property_name]) ? $properties[$property_name] === NULL || trim($properties[$property_name]) === '' : TRUE;
 	}
 
+	function formatNumber($number) {
+		if (is_numeric($number)) {
+			return number_format($number);
+		}
+		return $number;
+	}
+
 	function get($property_name, $default_value=NULL) {
 		$properties = $this->feature['properties'];
 		return $this->isNull($property_name) ? $default_value : $properties[$property_name];
