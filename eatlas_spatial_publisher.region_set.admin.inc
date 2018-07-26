@@ -287,6 +287,7 @@ function eatlas_spatial_publisher_regions_set_get_feature_tree($site_tid) {
 								// If the parent was not found, create an artificial parent to hold the child
 								if (!$parent) {
 									$parent = array(
+										'id' => $child_feature['properties'][$feature_fk],
 										'children' => array()
 									);
 									$feature_map[$child_feature['properties'][$feature_fk]] = $parent;
