@@ -319,14 +319,16 @@ function eatlas_spatial_publisher_regions_set_get_feature_node($site_tid, $featu
 function _eatlas_spatial_publisher_regions_set_find_feature_node($feature_tree, $feature_id) {
 	if ($feature_tree && count($feature_tree) > 0) {
 		foreach ($feature_tree as $current_feature) {
-			$current_feature_id = $current_feature['id'];
-			if ($current_feature_id === $feature_id) {
-				return $current_feature['node'];
-			}
-			if (isset($current_feature['children']) && count($current_feature['children']) > 0) {
-				$branch_found_node = _eatlas_spatial_publisher_regions_set_find_feature_node($current_feature['children'], $feature_id);
-				if ($branch_found_node !== NULL) {
-					return $branch_found_node;
+			if (isset($current_feature['id'])) {
+				$current_feature_id = $current_feature['id'];
+				if ($current_feature_id === $feature_id) {
+					return $current_feature['node'];
+				}
+				if (isset($current_feature['children']) && count($current_feature['children']) > 0) {
+					$branch_found_node = _eatlas_spatial_publisher_regions_set_find_feature_node($current_feature['children'], $feature_id);
+					if ($branch_found_node !== NULL) {
+						return $branch_found_node;
+					}
 				}
 			}
 		}

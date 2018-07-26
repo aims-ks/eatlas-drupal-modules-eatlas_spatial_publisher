@@ -433,6 +433,8 @@ function eatlas_spatial_publisher_save_taxonomy_term($values) {
 /**
  * Inspired from:
  *   taxonomy.admin.inc: taxonomy_term_confirm_delete_submit
+ * NOTE: Automatically deleting the term is too risky. All the node association will be lost.
+ *   It's safer to mark the term for deletion and let the admin delete them.
  */
 function eatlas_spatial_publisher_delete_taxonomy_term($tid) {
 	$publisher_vocabulary = taxonomy_vocabulary_machine_name_load(EATLAS_SPATIAL_PUBLISHER_VOCABULARY);
@@ -440,13 +442,15 @@ function eatlas_spatial_publisher_delete_taxonomy_term($tid) {
 	if ($term->vid === $publisher_vocabulary->vid) {
 		$term_name = $term->name;
 
-		taxonomy_term_delete($tid);
-		taxonomy_check_vocabulary_hierarchy($publisher_vocabulary, (array)$term);
+		drupal_set_message(t('Taxonomy term %name marked for delete.', array('%name' => $term_name)));
+		watchdog('eatlas_spatial_publisher', 'Taxonomy term %name marked for delete.', array('%name' => $term_name), WATCHDOG_NOTICE);
 
-		drupal_set_message(t('Deleted taxonomy term %name.', array('%name' => $term_name)));
-		watchdog('eatlas_spatial_publisher', 'Deleted taxonomy term %name.', array('%name' => $term_name), WATCHDOG_NOTICE);
-
-		cache_clear_all();
+		// Add the suffix to the term name, if it doesn't already have the suffix
+		$suffix = " (TO DELETE)";
+		if (substr($term_name, -strlen($suffix)) !== $suffix) {
+			$term->name .= $suffix;
+			taxonomy_term_save($term);
+		}
 	}
 }
 
