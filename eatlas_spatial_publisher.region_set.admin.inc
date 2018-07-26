@@ -308,8 +308,8 @@ function eatlas_spatial_publisher_regions_set_get_feature_tree($site_tid) {
 // Find the node associated with a feature ID
 function eatlas_spatial_publisher_regions_set_get_feature_node($site_tid, $feature_id) {
 	if ($site_tid) {
-		$features = eatlas_spatial_publisher_regions_set_get_feature_tree($site_tid);
-		$feature_node = _eatlas_spatial_publisher_regions_set_find_feature_node($features, $feature_id);
+		$feature_tree = eatlas_spatial_publisher_regions_set_get_feature_tree($site_tid);
+		$feature_node = _eatlas_spatial_publisher_regions_set_find_feature_node($feature_tree, $feature_id);
 		return $feature_node;
 	}
 	return NULL;
@@ -319,16 +319,14 @@ function eatlas_spatial_publisher_regions_set_get_feature_node($site_tid, $featu
 function _eatlas_spatial_publisher_regions_set_find_feature_node($feature_tree, $feature_id) {
 	if ($feature_tree && count($feature_tree) > 0) {
 		foreach ($feature_tree as $current_feature) {
-			if (isset($current_feature['id'])) {
-				$current_feature_id = $current_feature['id'];
-				if ($current_feature_id === $feature_id) {
-					return $current_feature['node'];
-				}
-				if (isset($current_feature['children']) && count($current_feature['children']) > 0) {
-					$branch_found_node = _eatlas_spatial_publisher_regions_set_find_feature_node($current_feature['children'], $feature_id);
-					if ($branch_found_node !== NULL) {
-						return $branch_found_node;
-					}
+			$current_feature_id = isset($current_feature['id']) ? $current_feature['id'] : NULL;
+			if ($current_feature_id === $feature_id) {
+				return $current_feature['node'];
+			}
+			if (isset($current_feature['children']) && count($current_feature['children']) > 0) {
+				$branch_found_node = _eatlas_spatial_publisher_regions_set_find_feature_node($current_feature['children'], $feature_id);
+				if ($branch_found_node !== NULL) {
+					return $branch_found_node;
 				}
 			}
 		}

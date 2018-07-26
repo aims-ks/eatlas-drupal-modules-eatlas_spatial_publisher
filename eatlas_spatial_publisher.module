@@ -815,8 +815,8 @@ function eatlas_spatial_publisher_get_feature($site_tid, $feature_id) {
 function _eatlas_spatial_publisher_get_feature($feature_branch, $feature_id) {
 	if ($feature_branch) {
 		foreach($feature_branch as $feature) {
-			if ($feature && isset($feature['id'])) {
-				if ($feature['id'] === $feature_id) {
+			if ($feature) {
+				if (isset($feature['id']) && $feature['id'] === $feature_id) {
 					return $feature;
 				}
 				if (isset($feature['children'])) {
