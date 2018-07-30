@@ -506,6 +506,16 @@ class EAtlas_spatial_publisher_template_context {
 	// Used to determine if a link should be added to the breadcrumbs.
 	function getFeature($feature_id) {
 		$feature = eatlas_spatial_publisher_get_feature($this->site_tid, $feature_id);
+
+		if (!$feature) {
+			return null;
+		}
+
+		// Do not return "fake" node
+		if (isset($feature['virtual']) && $feature['virtual']) {
+			return null;
+		}
+
 		// Do not return features that have a single child. We want to bypass those.
 		if (isset($feature['children']) && count($feature['children']) === 1) {
 			return null;
@@ -588,6 +598,10 @@ function _eAtlas_spatial_publisher_regions_site_submenu_tree_page_data($menu_nam
 
 				// The menu item can be ignored if specified in the properties
 				$ignore = isset($feature['properties']['menu_ignore']) && $feature['properties']['menu_ignore'];
+
+				if (isset($feature['virtual']) && $feature['virtual']) {
+					$ignore = TRUE;
+				}
 
 				if (!$ignore) {
 					$menu_links[$mlid] = array(

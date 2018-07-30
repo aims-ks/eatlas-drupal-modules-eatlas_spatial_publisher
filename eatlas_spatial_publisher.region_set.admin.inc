@@ -288,6 +288,7 @@ function eatlas_spatial_publisher_regions_set_get_feature_tree($site_tid) {
 								if (!$parent) {
 									$parent = array(
 										'id' => $child_feature['properties'][$feature_fk],
+										'virtual' => TRUE,
 										'children' => array()
 									);
 									$feature_map[$child_feature['properties'][$feature_fk]] = $parent;

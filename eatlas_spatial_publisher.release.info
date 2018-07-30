@@ -9,4 +9,4 @@ creator = Gael Lafond, Marc Hammerton
 ;   This variable is an array, one cell per element. Use "\n" for new lines.
 ;   Those properties are used with release_notes and tags.
 ;   See: https://www.drupal.org/documentation/releases/types
-New features[] = Added method formatNumber to template context. Return input string when it's not a number.
+New features[] = Fix bug with "fake" network showing in the breadcrumbs and the menu.
