@@ -46,7 +46,7 @@
 					if (target_el) {
 
 						if (target_el.children().length > 3) {
-							target_el.css('max-height', '200px');
+							target_el.css('max-height', '350px');
 							target_el.css('overflow', 'hidden');
 
 							// The collapsible element exists and is NOT empty
@@ -57,7 +57,7 @@
 									var maxHeight = el.css('max-height');
 									var button_label = null;
 									if (!maxHeight || maxHeight === 'none') {
-										el.css('max-height', '200px');
+										el.css('max-height', '350px');
 										button_label = button_el.attr("expandLabel");
 									} else {
 										el.css('max-height', 'none');
