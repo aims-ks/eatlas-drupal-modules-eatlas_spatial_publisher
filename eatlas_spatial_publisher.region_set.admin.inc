@@ -175,49 +175,80 @@ function _eatlas_spatial_publisher_regions_set_get_geojson(stdClass $node) {
 	// We are returning JSON, so tell the browser.
 	drupal_add_http_header('Content-Type', 'application/json');
 
-	$geojson_content = _eatlas_spatial_publisher_regions_set_get_geojson_content($node);
+	$geojson_str = '';
+	if ($cache = cache_get(EATLAS_SPATIAL_PUBLISHER_NODE_CACHE_PREFIX . $node->nid)) {
+		$geojson_str = $cache->data;
+	} else {
+		$geojson_content = _eatlas_spatial_publisher_regions_set_get_geojson_content($node);
 
 
-	// ADD CHILDREN FEATURES
-	$feature_fk = 'Network_ID'; // TODO Get from node
-	// Build the feature map
-	$feature_map = array();
-	if ($geojson_content && $geojson_content['features']) {
-		foreach($geojson_content['features'] as &$feature) {
-			if (isset($feature['properties'][$feature_fk])) {
-				$feature['properties']['_childNodes'] = array();
-				$feature['title'] = isset($feature['properties']['Network']) ? $feature['properties']['Network'] : t('Untitled');
-				$feature['nid'] = $node->nid;
-				$feature_map[$feature['properties'][$feature_fk]] = &$feature;
+		// ADD CHILDREN FEATURES
+		$feature_fk = 'Network_ID'; // TODO Get from node
+		// Build the feature map
+		$feature_map = array();
+		if ($geojson_content && $geojson_content['features']) {
+
+			usort($geojson_content['features'], '_eatlas_spatial_publisher_regions_set_sort_features');
+
+			foreach($geojson_content['features'] as &$feature) {
+				if (isset($feature['properties'][$feature_fk])) {
+					$feature['properties']['_childNodes'] = array();
+					$feature['title'] = isset($feature['properties']['Network']) ? $feature['properties']['Network'] : t('Untitled');
+					$feature['nid'] = $node->nid;
+					$feature_map[$feature['properties'][$feature_fk]] = &$feature;
+				}
 			}
 		}
-	}
 
-	$child_nodes = eatlas_spatial_publisher_region_set_load_children($node);
-	if ($child_nodes) {
-		foreach($child_nodes as $child_node) {
-			$child_features_arr = _eatlas_spatial_publisher_regions_set_get_geojson_content($child_node);
-			if ($child_features_arr && $child_features_arr['features']) {
-				foreach($child_features_arr['features'] as $child_feature) {
-					if (isset($child_feature['properties'][$feature_fk])) {
-						$parent = &$feature_map[$child_feature['properties'][$feature_fk]];
-						if ($parent) {
-							$child_feature['title'] = isset($child_feature['properties']['MPA_NAME']) ? $child_feature['properties']['MPA_NAME'] : t('Untitled');
-							$child_feature['nid'] = $child_node->nid;
-							$parent['properties']['_childNodes'][] = $child_feature;
+		$child_nodes = eatlas_spatial_publisher_region_set_load_children($node);
+		if ($child_nodes) {
+			foreach($child_nodes as $child_node) {
+				$child_features_arr = _eatlas_spatial_publisher_regions_set_get_geojson_content($child_node);
+				if ($child_features_arr && $child_features_arr['features']) {
+					foreach($child_features_arr['features'] as $child_feature) {
+						if (isset($child_feature['properties'][$feature_fk])) {
+							$parent = &$feature_map[$child_feature['properties'][$feature_fk]];
+							if ($parent) {
+								$child_feature['title'] = isset($child_feature['properties']['MPA_NAME']) ? $child_feature['properties']['MPA_NAME'] : t('Untitled');
+								$child_feature['nid'] = $child_node->nid;
+								$parent['properties']['_childNodes'][] = $child_feature;
+							}
 						}
 					}
 				}
 			}
 		}
+
+		if (!empty($geojson_content)) {
+			// Merge the CSV metadata to the GeoJSON features
+			$geojson_str = drupal_json_encode($geojson_content);
+		}
+
+		cache_set(EATLAS_SPATIAL_PUBLISHER_NODE_CACHE_PREFIX . $node->nid, $geojson_str);
 	}
 
-
-
-	if (!empty($geojson_content)) {
-		// Merge the CSV metadata to the GeoJSON features
-		print drupal_json_encode($geojson_content);
+	if ($geojson_str) {
+		print $geojson_str;
 	}
+}
+
+function _eatlas_spatial_publisher_regions_set_sort_features($feature_a, $feature_b) {
+	$feature_a_ignore = FALSE;
+	if (isset($feature_a['properties']['menu_ignore']) && $feature_a['properties']['menu_ignore']) {
+		$feature_a_ignore = TRUE;
+	}
+
+	$feature_b_ignore = FALSE;
+	if (isset($feature_b['properties']['menu_ignore']) && $feature_b['properties']['menu_ignore']) {
+		$feature_b_ignore = TRUE;
+	}
+
+	// If they are both ignore, or both NOT ignore, the order doesn't matter
+	if ($feature_a_ignore === $feature_b_ignore) {
+		return -1;
+	}
+
+	return $feature_a_ignore ? -1 : 1;
 }
 
 function _eatlas_spatial_publisher_regions_set_get_geojson_content(stdClass $node) {
@@ -653,6 +684,8 @@ function eatlas_spatial_publisher_node_update($node) {
  */
 function eatlas_spatial_publisher_node_delete($node) {
 	if ($node->type === EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE) {
+		cache_clear_all(EATLAS_SPATIAL_PUBLISHER_NODE_CACHE_PREFIX . $node->nid, 'cache');
+
 		$geojson_file_id = _eatlas_spatial_publisher_region_get_fid($node, 'field_eatlas_publisher_geojson');
 		cache_clear_all(EATLAS_SPATIAL_PUBLISHER_FILE_CACHE_PREFIX . $geojson_file_id, 'cache');
 

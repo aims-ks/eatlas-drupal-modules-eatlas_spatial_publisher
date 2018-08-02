@@ -14,6 +14,7 @@ define('EATLAS_SPATIAL_PUBLISHER_BLOCK_PREFIX', 'eatlas_publisher_map_'); // Max
 
 // Cache constants
 define('EATLAS_SPATIAL_PUBLISHER_FILE_CACHE_PREFIX', 'eatlas_publisher_fid_');
+define('EATLAS_SPATIAL_PUBLISHER_NODE_CACHE_PREFIX', 'eatlas_publisher_nid_');
 
 // Slider settings
 define('EATLAS_SPATIAL_PUBLISHER_SLIDER_MAX_IMAGES', 10);
