@@ -16,10 +16,12 @@ function eatlas_spatial_publisher_regions_save(stdClass $node) {
 
 		if ($geojson_file_id !== $original_geojson_file_id) {
 			cache_clear_all(EATLAS_SPATIAL_PUBLISHER_FILE_CACHE_PREFIX . $original_geojson_file_id, 'cache');
+			cache_clear_all(EATLAS_SPATIAL_PUBLISHER_NODE_CACHE_PREFIX . $original_node->nid, 'cache');
 			$dirty = TRUE;
 		}
 		if ($csv_file_id !== $original_csv_file_id) {
 			cache_clear_all(EATLAS_SPATIAL_PUBLISHER_FILE_CACHE_PREFIX . $original_csv_file_id, 'cache');
+			cache_clear_all(EATLAS_SPATIAL_PUBLISHER_NODE_CACHE_PREFIX . $original_node->nid, 'cache');
 			eatlas_spatial_publisher_fix_csv_file($csv_file_id);
 			$dirty = TRUE;
 		}
