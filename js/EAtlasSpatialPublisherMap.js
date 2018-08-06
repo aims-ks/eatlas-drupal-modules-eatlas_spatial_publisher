@@ -500,9 +500,6 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 	}(this));
 	this.olMap.on('pointerup', function(that) {
 		return function(event) {
-			// Reset the mouse-over feature
-			that.mouseoverFeature = null;
-
 			var selectedFeature = null;
 			var selectedLayer = null;
 
@@ -510,7 +507,6 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 				event.pixel,
 				function(feature, layer) {
 					selectedFeature = feature;
-					that.selectedFeatureId = feature.getId();
 					selectedLayer = layer;
 					return true;
 				},
@@ -528,10 +524,15 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 
 			// A drag distance of less than 10 pixel is considered a click
 			if (dragDistance < 10) {
+				// Reset the mouse-over feature
+				that.mouseoverFeature = null;
+
 				if (selectedFeature && selectedLayer) {
+					that.selectedFeatureId = selectedFeature.getId();
 					// Zoom to the clicked feature
 					that.zoomToFeature(selectedFeature, that.getChildLayers(selectedLayer));
 				} else {
+					that.selectedFeatureId = null;
 					// Reset the map
 					// Zoom to the root layer
 					that.zoomToFeature(null, [that.rootGeoJSONLayer]);
