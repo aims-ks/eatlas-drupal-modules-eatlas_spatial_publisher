@@ -353,6 +353,20 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 		layers.push(layer);
 	}
 
+	var viewConfig = {
+		center: [0, 0],
+		zoom: 2
+	};
+
+	if (this.config.maxZoom) {
+		if (Number.isInteger(this.config.maxZoom) && this.config.maxZoom > 0) {
+			viewConfig.maxZoom = this.config.maxZoom;
+		} else {
+			console.log("Invalid maximum zoom level: " + this.config.maxZoom + ". Expected positive integer number");
+		}
+	}
+
+
 	this.olMap = new ol.Map({
 		layers: layers,
 		target: this.config.target,
@@ -370,10 +384,7 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 			})
 		}),
 		// Create a view. It doesn't really matter where it's pointing at, it will be re-positioned
-		view: new ol.View({
-			center: [0, 0],
-			zoom: 2
-		})
+		view: new ol.View(viewConfig)
 	});
 
 	// Get extent (bounding box) from config, if present

@@ -144,6 +144,17 @@ function _eatlas_spatial_publisher_site_form($form, &$form_state, stdClass $taxo
 	);
 	*/
 
+	$form['map_max_zoom'] = array(
+		'#type' => 'textfield',
+		'#attributes' => array(
+			// NOTE: The space before 'type' is required (?)
+			' type' => 'number'
+		),
+		'#title' => t('Max zoom level'),
+		'#description' => t('Map maximum zoom level. Leave blank to use basemap max zoom level.'),
+		'#default_value' => property_exists($values, 'map_max_zoom') ? $values->map_max_zoom : ''
+	);
+
 	// Initial zoom bounding box
 	$form['bbox_north'] = array(
 		'#type' => 'textfield',
@@ -212,7 +223,9 @@ function _eatlas_spatial_publisher_site_form($form, &$form_state, stdClass $taxo
  * Drupal magic: <form ID>_validate
  * Validate add / edit / delete site form
  */
-function _eatlas_spatial_publisher_site_form_validate($form, &$form_state) {}
+function _eatlas_spatial_publisher_site_form_validate($form, &$form_state) {
+	// TODO Validate map_max_zoom (integer) and bbox (float)
+}
 
 /**
  * Drupal magic: <form ID>_submit
@@ -243,6 +256,8 @@ function _eatlas_spatial_publisher_site_form_submit($form, &$form_state) {
 	$publisher_site->name = $form_state['values']['name'];
 	$publisher_site->region_menus = $form_state['values']['region_menus'];
 	//$publisher_site->theme = $form_state['values']['theme'];
+
+	$publisher_site->map_max_zoom = _eatlas_spatial_publisher_site_get_form_state_value($form_state, 'map_max_zoom');
 
 	$publisher_site->bbox_north = _eatlas_spatial_publisher_site_get_form_state_value($form_state, 'bbox_north');
 	$publisher_site->bbox_east  = _eatlas_spatial_publisher_site_get_form_state_value($form_state, 'bbox_east');

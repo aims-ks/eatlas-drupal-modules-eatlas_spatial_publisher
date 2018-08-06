@@ -111,6 +111,11 @@ function eatlas_spatial_publisher_schema() {
 			),
 			// TODO Add pretty much everything that is in the Branding module
 
+			'map_max_zoom' => array(
+				'description' => 'Map max zoom level.',
+				'type' => 'int'
+			),
+
 			// Initial zoom bounding box
 			// Since 7.x-0.15
 			'bbox_north' => array(
@@ -272,6 +277,16 @@ function eatlas_spatial_publisher_update_7002(&$sandbox) {
 function eatlas_spatial_publisher_update_7003(&$sandbox) {
 	if (db_table_exists('eatlas_spatial_publisher_region_set')) {
 		db_drop_table('eatlas_spatial_publisher_region_set');
+	}
+}
+
+/**
+ * Add map max zoom level field. (7.x-0.56)
+ */
+function eatlas_spatial_publisher_update_7004(&$sandbox) {
+	$schema = drupal_get_schema(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE);
+	if (!db_field_exists(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'map_max_zoom')) {
+		db_add_field(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'map_max_zoom', $schema['fields']['map_max_zoom']);
 	}
 }
 
