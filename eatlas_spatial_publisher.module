@@ -799,7 +799,11 @@ function eatlas_spatial_publisher_get_initial_zoom_bbox($node) {
 	}
 	if ($tid) {
 		$publisher_site = eatlas_spatial_publisher_site_load($tid);
-		if ($publisher_site) {
+		if ($publisher_site &&
+				property_exists($publisher_site, 'bbox_north') &&
+				property_exists($publisher_site, 'bbox_east') &&
+				property_exists($publisher_site, 'bbox_south') &&
+				property_exists($publisher_site, 'bbox_west')) {
 			$north = $publisher_site->bbox_north;
 			$east = $publisher_site->bbox_east;
 			$south = $publisher_site->bbox_south;
@@ -817,6 +821,26 @@ function eatlas_spatial_publisher_get_initial_zoom_bbox($node) {
 	}
 
 	return json_encode($bbox);
+}
+
+function eatlas_spatial_publisher_get_max_zoom($node) {
+	$max_zoom = NULL;
+
+	$tid = NULL;
+	if (property_exists($node, 'field_eatlas_publisher_tid') &&
+			isset($node->field_eatlas_publisher_tid[LANGUAGE_NONE]) &&
+			isset($node->field_eatlas_publisher_tid[LANGUAGE_NONE][0]) &&
+			isset($node->field_eatlas_publisher_tid[LANGUAGE_NONE][0]['value'])) {
+		$tid = $node->field_eatlas_publisher_tid[LANGUAGE_NONE][0]['value'];
+	}
+	if ($tid) {
+		$publisher_site = eatlas_spatial_publisher_site_load($tid);
+		if ($publisher_site && property_exists($publisher_site, 'map_max_zoom')) {
+			$max_zoom = intval($publisher_site->map_max_zoom);
+		}
+	}
+
+	return json_encode($max_zoom);
 }
 
 /*****************

@@ -100,6 +100,7 @@ $context = new EAtlas_spatial_publisher_template_context($node, NULL);
 				baseLayer: <?php print eatlas_spatial_publisher_get_baselayer($node); ?>,
 				layers: <?php print eatlas_spatial_publisher_get_layers_js_array($node); ?>,
 				bbox: <?php print eatlas_spatial_publisher_get_initial_zoom_bbox($node); ?>,
+				maxZoom: <?php print eatlas_spatial_publisher_get_max_zoom($node); ?>,
 				panelCss: {
 					'width': '45%',
 					'min-width': '400px'

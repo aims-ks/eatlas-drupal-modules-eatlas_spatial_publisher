@@ -9,4 +9,4 @@ creator = Gael Lafond, Marc Hammerton
 ;   This variable is an array, one cell per element. Use "\n" for new lines.
 ;   Those properties are used with release_notes and tags.
 ;   See: https://www.drupal.org/documentation/releases/types
-Bug fixes[] = Wrong style selection on mobile devices (touch screen).
+New features[] = Added max zoom level.
