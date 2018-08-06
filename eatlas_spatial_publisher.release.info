@@ -9,5 +9,5 @@ creator = Gael Lafond, Marc Hammerton
 ;   This variable is an array, one cell per element. Use "\n" for new lines.
 ;   Those properties are used with release_notes and tags.
 ;   See: https://www.drupal.org/documentation/releases/types
-Bug fixes[] = Put feature that have menu_ignore behind others.
-New features[] = Added caching for the merged GeoJSON + CSV json string.
+New features[] = Added selected feature style.
+Bug fixes[] = Reduced the feature buffer (was 10, now 5).

@@ -122,6 +122,7 @@ $context = new EAtlas_spatial_publisher_template_context($node, NULL);
 			});
 			currentState = getURLParameters();
 			if (currentState.featureId) {
+				eAtlasSpatialPublisherMap.selectFeatureId(currentState.featureId);
 				eAtlasSpatialPublisherMap.zoomToFeatureId(currentState.featureId);
 			}
 
@@ -151,6 +152,7 @@ $context = new EAtlas_spatial_publisher_template_context($node, NULL);
 							);
 						};
 					}(state.featureId));
+					eAtlasSpatialPublisherMap.selectFeatureId(state.featureId);
 					eAtlasSpatialPublisherMap.zoomToFeatureId(state.featureId);
 				} else {
 					setDefaultPanelContent();

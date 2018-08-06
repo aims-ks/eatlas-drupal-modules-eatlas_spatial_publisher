@@ -707,12 +707,20 @@ function eatlas_spatial_publisher_get_layers_js_array($node) {
 		$style = $node->field_eatlas_publisher_style[LANGUAGE_NONE][0]['value'];
 	}
 
-	$highlight_style = NULL;
+	$selected_style = NULL;
 	if (property_exists($node, 'field_eatlas_publisher_hl_style') &&
 			isset($node->field_eatlas_publisher_hl_style[LANGUAGE_NONE]) &&
 			isset($node->field_eatlas_publisher_hl_style[LANGUAGE_NONE][0]) &&
 			isset($node->field_eatlas_publisher_hl_style[LANGUAGE_NONE][0]['value'])) {
-		$highlight_style = $node->field_eatlas_publisher_hl_style[LANGUAGE_NONE][0]['value'];
+		$selected_style = $node->field_eatlas_publisher_hl_style[LANGUAGE_NONE][0]['value'];
+	}
+
+	$mouseover_style = NULL;
+	if (property_exists($node, 'field_eatlas_publisher_mo_style') &&
+			isset($node->field_eatlas_publisher_mo_style[LANGUAGE_NONE]) &&
+			isset($node->field_eatlas_publisher_mo_style[LANGUAGE_NONE][0]) &&
+			isset($node->field_eatlas_publisher_mo_style[LANGUAGE_NONE][0]['value'])) {
+		$mouseover_style = $node->field_eatlas_publisher_mo_style[LANGUAGE_NONE][0]['value'];
 	}
 
 	return "[\n" .
@@ -721,7 +729,8 @@ function eatlas_spatial_publisher_get_layers_js_array($node) {
 		"		title: " . json_encode($node->title) . ",\n" .
 		"		url: " . json_encode($geoJSON_url) . ",\n" .
 		"		style: " . json_encode($style) . ",\n" .
-		"		highlight_style: " . json_encode($highlight_style) . "\n" .
+		"		selected_style: " . json_encode($selected_style) . ",\n" .
+		"		mouseover_style: " . json_encode($mouseover_style) . "\n" .
 		"	}" .
 		_eatlas_spatial_publisher_get_child_layers_js($node) . "\n" .
 		"]";
@@ -745,12 +754,20 @@ function _eatlas_spatial_publisher_get_child_layers_js($parent_node) {
 				$child_style = $child_node->field_eatlas_publisher_style[LANGUAGE_NONE][0]['value'];
 			}
 
-			$child_highlight_style = NULL;
+			$child_selected_style = NULL;
 			if (property_exists($child_node, 'field_eatlas_publisher_hl_style') &&
 					isset($child_node->field_eatlas_publisher_hl_style[LANGUAGE_NONE]) &&
 					isset($child_node->field_eatlas_publisher_hl_style[LANGUAGE_NONE][0]) &&
 					isset($child_node->field_eatlas_publisher_hl_style[LANGUAGE_NONE][0]['value'])) {
-				$child_highlight_style = $child_node->field_eatlas_publisher_hl_style[LANGUAGE_NONE][0]['value'];
+				$child_selected_style = $child_node->field_eatlas_publisher_hl_style[LANGUAGE_NONE][0]['value'];
+			}
+
+			$child_mouseover_style = NULL;
+			if (property_exists($child_node, 'field_eatlas_publisher_mo_style') &&
+					isset($child_node->field_eatlas_publisher_mo_style[LANGUAGE_NONE]) &&
+					isset($child_node->field_eatlas_publisher_mo_style[LANGUAGE_NONE][0]) &&
+					isset($child_node->field_eatlas_publisher_mo_style[LANGUAGE_NONE][0]['value'])) {
+				$child_mouseover_style = $child_node->field_eatlas_publisher_mo_style[LANGUAGE_NONE][0]['value'];
 			}
 
 			$child_layers_str .=
@@ -760,7 +777,8 @@ function _eatlas_spatial_publisher_get_child_layers_js($parent_node) {
 				"		title: " . json_encode($child_node->title) . ",\n" .
 				"		url: " . json_encode($child_url) . ",\n" .
 				"		style: " . json_encode($child_style) . ",\n" .
-				"		highlight_style: " . json_encode($child_highlight_style) . "\n" .
+				"		selected_style: " . json_encode($child_selected_style) . ",\n" .
+				"		mouseover_style: " . json_encode($child_mouseover_style) . "\n" .
 				"	}" .
 				_eatlas_spatial_publisher_get_child_layers_js($child_node);
 		}
