@@ -137,11 +137,20 @@ function eatlas_spatial_publisher_node_type_insert($content_type) {
 		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 
 		_eatlas_spatial_publisher_create_node_field(array(
+			'field_name' => 'field_eatlas_publisher_mo_style', // Max 32 characters!
+			'type' => 'text_long',
+			'widget' => array('type' => 'text_textarea'),
+			'label' => t('Mouse over style'),
+			'description' => t('The style used when the mouse move over a polygon. If none is specified, the lines will appear 3x thicker.'),
+			'required' => FALSE
+		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+
+		_eatlas_spatial_publisher_create_node_field(array(
 			'field_name' => 'field_eatlas_publisher_hl_style', // Max 32 characters!
 			'type' => 'text_long',
 			'widget' => array('type' => 'text_textarea'),
-			'label' => t('Highlight style'),
-			'description' => t('The style used when the mouse move over a polygon. If none is specified, the lines will appear 3x thicker.'),
+			'label' => t('Selected style'),
+			'description' => t('The style used to highlight the selected polygon. If none is specified, the lines will appear 3x thicker.'),
 			'required' => FALSE
 		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 

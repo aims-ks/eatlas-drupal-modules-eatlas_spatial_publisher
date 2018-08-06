@@ -44,6 +44,10 @@ function EAtlasSpatialPublisherMap(config) {
 	// }
 	this.featureMap = {};
 
+	this.selectedFeatureId = null;
+	this.mouseoverFeature = null;
+	this.featureBuffer = 5; // in pixels (hitTolerance)
+
 	// List of event listener to call when all layers are loaded
 	// {
 	//   eventListenerId: callback
@@ -176,14 +180,12 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 	var layers = [baseLayer];
 
 
-	var highlightedFeature = null;
-
 	this.geoJSONLayerMap = {};
 	for (var i=0; i<this.config.layers.length; i++) {
 		var layerConfig = this.config.layers[i];
 
 		// Create a style function for the current layer
-		function styleFunction(layerConfig) {
+		function styleFunction(layerConfig, that) {
 			// The default style is created from a closed scope function (or maybe it's just minimised...)
 			//   The easiest way to get the default style function is to create an empty layer
 			//   and request its style function.
@@ -222,10 +224,41 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 					baseStyle = defaultVectorStyleFunction(feature, resolution)[0].clone();
 				}
 
-				if (feature === highlightedFeature) {
-					if (layerConfig.highlight_style) {
+				// Highlight the selected feature(s) using the selected feature style
+				if (feature.getId() === that.selectedFeatureId || feature.get('Network_ID') === that.selectedFeatureId) {
+					if (layerConfig.selected_style) {
 						try {
-							eval("baseStyle = " + layerConfig.highlight_style);
+							eval("baseStyle = " + layerConfig.selected_style);
+						} catch (e) {
+							console.log(e);
+						}
+					} else {
+						var styleStroke, baseStrokeWidth, highlightStrokeWidth;
+						if (Array.isArray(baseStyle)) {
+							for (var j=0; j<baseStyle.length; j++) {
+								styleStroke = baseStyle[j].getStroke();
+								if (styleStroke) {
+									baseStrokeWidth = styleStroke.getWidth();
+									highlightStrokeWidth = baseStrokeWidth ? baseStrokeWidth * 3 : 1;
+									styleStroke.setWidth(highlightStrokeWidth);
+								}
+							}
+						} else {
+							styleStroke = baseStyle.getStroke();
+							if (styleStroke) {
+								baseStrokeWidth = styleStroke.getWidth();
+								highlightStrokeWidth = baseStrokeWidth ? baseStrokeWidth * 3 : 1;
+								styleStroke.setWidth(highlightStrokeWidth);
+							}
+						}
+					}
+				}
+
+				// Highlight the mouse-over feature using the mouse-over feature style
+				if (feature === that.mouseoverFeature) {
+					if (layerConfig.mouseover_style) {
+						try {
+							eval("baseStyle = " + layerConfig.mouseover_style);
 						} catch (e) {
 							console.log(e);
 						}
@@ -260,7 +293,7 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 		var layer = new ol.layer.Vector({
 			title: layerConfig.title,
 			opacity: layerConfig.parentId == null ? 1 : 0,
-			style: styleFunction(layerConfig),
+			style: styleFunction(layerConfig, this),
 			source: new ol.source.Vector({
 				url: layerConfig.url,
 				format: new ol.format.GeoJSON()
@@ -405,17 +438,21 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 
 	var highlightFeature = function(that) {
 		return function(pixel) {
-			var feature = that.olMap.forEachFeatureAtPixel(pixel, function(feature) {
-				return feature;
-			}, {
-				hitTolerance: 10
-			});
+			var feature = that.olMap.forEachFeatureAtPixel(
+				pixel,
+				function(feature) {
+					return feature;
+				},
+				{
+					hitTolerance: that.featureBuffer
+				}
+			);
 
-			if (feature !== highlightedFeature) {
-				highlightedFeature = feature;
+			if (feature !== that.mouseoverFeature) {
+				that.mouseoverFeature = feature;
 
 				// Change the mouse cursor when the mouse is over a polygon
-				if (highlightedFeature) {
+				if (that.mouseoverFeature) {
 					that.map_target.css("cursor", "pointer");
 				} else {
 					that.map_target.css("cursor", "auto");
@@ -463,16 +500,24 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 	}(this));
 	this.olMap.on('pointerup', function(that) {
 		return function(event) {
+			// Reset the mouse-over feature
+			that.mouseoverFeature = null;
+
 			var selectedFeature = null;
 			var selectedLayer = null;
 
-			that.olMap.forEachFeatureAtPixel(event.pixel, function(feature, layer) {
-				selectedFeature = feature;
-				selectedLayer = layer;
-				return true;
-			}, {
-				hitTolerance: 10
-			});
+			that.olMap.forEachFeatureAtPixel(
+				event.pixel,
+				function(feature, layer) {
+					selectedFeature = feature;
+					that.selectedFeatureId = feature.getId();
+					selectedLayer = layer;
+					return true;
+				},
+				{
+					hitTolerance: that.featureBuffer
+				}
+			);
 
 			var dragDistance = 0;
 			if (pointerDownEvent && pointerDownEvent.pixel && event && event.pixel) {
@@ -501,6 +546,10 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 			return true;
 		};
 	}(this));
+};
+
+EAtlasSpatialPublisherMap.prototype.selectFeatureId = function(featureId) {
+	this.selectedFeatureId = featureId;
 };
 
 EAtlasSpatialPublisherMap.prototype.getLayersState = function() {
@@ -714,6 +763,8 @@ EAtlasSpatialPublisherMap.prototype.getParentLayer = function(layer) {
 };
 
 EAtlasSpatialPublisherMap.prototype.resetZoom = function() {
+	this.selectedFeatureId = null;
+	this.mouseoverFeature = null;
 	this.zoomToFeature(null, [this.rootGeoJSONLayer]);
 };
 
