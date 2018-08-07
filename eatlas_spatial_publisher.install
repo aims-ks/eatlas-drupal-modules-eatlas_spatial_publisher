@@ -120,19 +120,19 @@ function eatlas_spatial_publisher_schema() {
 			// Since 7.x-0.15
 			'bbox_north' => array(
 				'description' => 'Initial bounding box - North.',
-				'type' => 'int'
+				'type' => 'float'
 			),
 			'bbox_east' => array(
 				'description' => 'Initial bounding box - East.',
-				'type' => 'int'
+				'type' => 'float'
 			),
 			'bbox_south' => array(
 				'description' => 'Initial bounding box - South.',
-				'type' => 'int'
+				'type' => 'float'
 			),
 			'bbox_west' => array(
 				'description' => 'Initial bounding box - West.',
-				'type' => 'int'
+				'type' => 'float'
 			)
 		),
 		'foreign keys' => array(
@@ -287,6 +287,47 @@ function eatlas_spatial_publisher_update_7004(&$sandbox) {
 	$schema = drupal_get_schema(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE);
 	if (!db_field_exists(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'map_max_zoom')) {
 		db_add_field(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'map_max_zoom', $schema['fields']['map_max_zoom']);
+	}
+}
+
+/**
+ * Change bounding box field type from integer to float. (7.x-0.57)
+ */
+function eatlas_spatial_publisher_update_7005(&$sandbox) {
+	$schema = drupal_get_schema(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE);
+
+	// Select current values and store them in an array to re-insert them after the fields have been fixed
+	$rows = db_select(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'sps')->fields('sps')->execute()->fetchAllAssoc('tid');
+
+	// Fix the bbox fields (delete the bbox integer fields and replace them with float fields)
+	if (db_field_exists(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_north')) {
+		db_drop_field(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_north');
+		db_add_field(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_north', $schema['fields']['bbox_north']);
+	}
+	if (db_field_exists(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_east')) {
+		db_drop_field(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_east');
+		db_add_field(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_east', $schema['fields']['bbox_east']);
+	}
+	if (db_field_exists(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_south')) {
+		db_drop_field(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_south');
+		db_add_field(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_south', $schema['fields']['bbox_south']);
+	}
+	if (db_field_exists(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_west')) {
+		db_drop_field(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_west');
+		db_add_field(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE, 'bbox_west', $schema['fields']['bbox_west']);
+	}
+
+	// Re-insert the bbox values
+	foreach ($rows as $tid => $row) {
+		db_update(EATLAS_SPATIAL_PUBLISHER_DB_SITE_TABLE)
+			->fields(array(
+				'bbox_north' => $row->bbox_north,
+				'bbox_east' => $row->bbox_east,
+				'bbox_south' => $row->bbox_south,
+				'bbox_west' => $row->bbox_west
+			))
+			->condition('tid', $tid, '=')
+			->execute();
 	}
 }
 
