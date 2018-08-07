@@ -47,6 +47,7 @@ function _eatlas_spatial_publisher_site_title(stdClass $taxonomy_term) {
 
 /**
  * Add / edit / delete site form
+ *   https://api.drupal.org/api/drupal/developer%21topics%21forms_api_reference.html/7.x
  */
 function _eatlas_spatial_publisher_site_form($form, &$form_state, stdClass $taxonomy_term = NULL) {
 	$publisher_vocabulary = taxonomy_vocabulary_machine_name_load(EATLAS_SPATIAL_PUBLISHER_VOCABULARY);
@@ -160,7 +161,8 @@ function _eatlas_spatial_publisher_site_form($form, &$form_state, stdClass $taxo
 		'#type' => 'textfield',
 		'#attributes' => array(
 			// NOTE: The space before 'type' is required (?)
-			' type' => 'number'
+			' type' => 'number',
+			'step' => 'any'
 		),
 		'#title' => t('North'),
 		'#description' => t('Initial zoom bounding box. If one of the coordinate is missing, the bounding box of the GeoJSON will be used.'),
@@ -170,7 +172,8 @@ function _eatlas_spatial_publisher_site_form($form, &$form_state, stdClass $taxo
 		'#type' => 'textfield',
 		'#attributes' => array(
 			// NOTE: The space before 'type' is required (?)
-			' type' => 'number'
+			' type' => 'number',
+			'step' => 'any'
 		),
 		'#title' => t('East'),
 		'#description' => t('Initial zoom bounding box. If one of the coordinate is missing, the bounding box of the GeoJSON will be used.'),
@@ -180,7 +183,8 @@ function _eatlas_spatial_publisher_site_form($form, &$form_state, stdClass $taxo
 		'#type' => 'textfield',
 		'#attributes' => array(
 			// NOTE: The space before 'type' is required (?)
-			' type' => 'number'
+			' type' => 'number',
+			'step' => 'any'
 		),
 		'#title' => t('South'),
 		'#description' => t('Initial zoom bounding box. If one of the coordinate is missing, the bounding box of the GeoJSON will be used.'),
@@ -190,7 +194,8 @@ function _eatlas_spatial_publisher_site_form($form, &$form_state, stdClass $taxo
 		'#type' => 'textfield',
 		'#attributes' => array(
 			// NOTE: The space before 'type' is required (?)
-			' type' => 'number'
+			' type' => 'number',
+			'step' => 'any'
 		),
 		'#title' => t('West'),
 		'#description' => t('Initial zoom bounding box. If one of the coordinate is missing, the bounding box of the GeoJSON will be used.'),
@@ -224,7 +229,71 @@ function _eatlas_spatial_publisher_site_form($form, &$form_state, stdClass $taxo
  * Validate add / edit / delete site form
  */
 function _eatlas_spatial_publisher_site_form_validate($form, &$form_state) {
-	// TODO Validate map_max_zoom (integer) and bbox (float)
+	// Validate map_max_zoom (integer > 0)
+	$map_max_zoom_str = _eatlas_spatial_publisher_site_get_form_state_value($form_state, 'map_max_zoom');
+	if ($map_max_zoom_str !== NULL) {
+		if (!is_numeric($map_max_zoom_str) || !is_int($map_max_zoom_str + 0)) {
+			form_set_error('map_max_zoom', 'Map maximum zoom level must be an integer.');
+		} else {
+			$map_max_zoom = intval($map_max_zoom_str);
+			if ($map_max_zoom <= 0) {
+				form_set_error('map_max_zoom', 'Map maximum zoom level must be a positive integer.');
+			}
+		}
+	}
+
+	// Validate bbox (float)
+	$bbox_north_str = _eatlas_spatial_publisher_site_get_form_state_value($form_state, 'bbox_north');
+	$bbox_east_str  = _eatlas_spatial_publisher_site_get_form_state_value($form_state, 'bbox_east');
+	$bbox_south_str = _eatlas_spatial_publisher_site_get_form_state_value($form_state, 'bbox_south');
+	$bbox_west_str  = _eatlas_spatial_publisher_site_get_form_state_value($form_state, 'bbox_west');
+	// Test if at least one value is set
+	if ($bbox_north_str !== NULL || $bbox_east_str !== NULL || $bbox_south_str !== NULL || $bbox_west_str !== NULL) {
+		// If one value is set, they all need to be set
+		if ($bbox_north_str === NULL) {
+			form_set_error('bbox_north', 'Incomplete initial zoom bounding box. North value is missing.');
+		} else if (!is_numeric($bbox_north_str)) {
+			form_set_error('bbox_north', 'Zoom bounding box North value must be numeric.');
+		} else {
+			$bbox_north = floatval($bbox_north_str);
+			if ($bbox_north > 90 || $bbox_north < -90) {
+				form_set_error('bbox_north', 'Zoom bounding box North value must be between -90 and 90.');
+			}
+		}
+
+		if ($bbox_south_str === NULL) {
+			form_set_error('bbox_south', 'Incomplete initial zoom bounding box. South value is missing.');
+		} else if (!is_numeric($bbox_south_str)) {
+			form_set_error('bbox_south', 'Zoom bounding box South value must be numeric.');
+		} else {
+			$bbox_south = floatval($bbox_south_str);
+			if ($bbox_south > 90 || $bbox_south < -90) {
+				form_set_error('bbox_south', 'Zoom bounding box South value must be between -90 and 90.');
+			}
+		}
+
+		if ($bbox_east_str === NULL) {
+			form_set_error('bbox_east', 'Incomplete initial zoom bounding box. East value is missing.');
+		} else if (!is_numeric($bbox_east_str)) {
+			form_set_error('bbox_east', 'Zoom bounding box East value must be numeric.');
+		} else {
+			$bbox_east = floatval($bbox_east_str);
+			if ($bbox_east > 180 || $bbox_east < -180) {
+				form_set_error('bbox_east', 'Zoom bounding box East value must be between -180 and 180.');
+			}
+		}
+
+		if ($bbox_west_str === NULL) {
+			form_set_error('bbox_west', 'Incomplete initial zoom bounding box. West value is missing.');
+		} else if (!is_numeric($bbox_west_str)) {
+			form_set_error('bbox_west', 'Zoom bounding box West value must be numeric.');
+		} else {
+			$bbox_west = floatval($bbox_west_str);
+			if ($bbox_west > 180 || $bbox_west < -180) {
+				form_set_error('bbox_west', 'Zoom bounding box West value must be between -180 and 180.');
+			}
+		}
+	}
 }
 
 /**
