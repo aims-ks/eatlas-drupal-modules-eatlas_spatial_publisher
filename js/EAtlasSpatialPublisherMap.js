@@ -548,6 +548,8 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 					// Zoom to the root layer
 					that.zoomToFeature(null, [that.rootGeoJSONLayer]);
 					selectedLayer = that.rootGeoJSONLayer;
+					// Trigger the changed event to force OpenLayers to update its style
+					selectedLayer.changed();
 				}
 
 				if (that.config.onFeatureClick) {
