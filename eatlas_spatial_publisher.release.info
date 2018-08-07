@@ -9,5 +9,4 @@ creator = Gael Lafond, Marc Hammerton
 ;   This variable is an array, one cell per element. Use "\n" for new lines.
 ;   Those properties are used with release_notes and tags.
 ;   See: https://www.drupal.org/documentation/releases/types
-Bug fixes[] = Change bounding box DB field from integer to float.
-New features[] = Added form validator to bbox fields and max zoom field.
+Bug fixes[] = Fixed a bug in the map on mobile device, that cause the network to stay highlighted when the map is loaded with a network highlighted and the user select a different feature then click outside to reset the map.
