@@ -380,6 +380,12 @@ function _eatlas_spatial_publisher_regions_set_get_feature_template($node, $feat
 	// http://aims.ereefs.localhost/eatlas_spatial_publisher/4003/feature/qld
 
 	$feature = eatlas_spatial_publisher_get_feature_from_node($node, $feature_id);
+	// Put the content of the template in a "section" to prevent unbalanced code from messing the page
+	// NOTE: It's unlikely that the template contains "section" tags.
+	//   When the browser sees the end of the section tag,
+	//   it closes everything that hasn't been closed in the section.
+	print '<section>' . "\n";
+
 	print '<!-- Apply same style as the body field of an article (adjust line-height) -->' . "\n";
 	print '<div class="field field-name-body field-type-text-with-summary">' . "\n";
 
@@ -393,7 +399,9 @@ function _eatlas_spatial_publisher_regions_set_get_feature_template($node, $feat
 		print '<div>Feature not found.</div>' . "\n";
 	}
 
-	print '</div>' . "\n";
+	print '</div> <!-- End of field-type-text-with-summary -->' . "\n";
+
+	print '</section>' . "\n";
 }
 
 /**
