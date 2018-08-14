@@ -10,3 +10,4 @@ creator = Gael Lafond, Marc Hammerton
 ;   Those properties are used with release_notes and tags.
 ;   See: https://www.drupal.org/documentation/releases/types
 Bug fixes[] = Clean-up: removed unused map block, added cache clear on module uninstall.
+Bug fixes[] = De-harcoded GeoJSON columns 'Network_ID', 'Network' and 'MPA_NAME'.

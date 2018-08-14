@@ -225,7 +225,7 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
 				}
 
 				// Highlight the selected feature(s) using the selected feature style
-				if (feature.getId() === that.selectedFeatureId || feature.get('Network_ID') === that.selectedFeatureId) {
+				if (feature.getId() === that.selectedFeatureId || (feature.get('parent_id') && feature.get('parent_id') === that.selectedFeatureId)) {
 					if (layerConfig.selected_style) {
 						try {
 							eval("baseStyle = " + layerConfig.selected_style);
