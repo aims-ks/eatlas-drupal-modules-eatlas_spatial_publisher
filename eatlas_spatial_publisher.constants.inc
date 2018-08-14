@@ -10,8 +10,6 @@ define('EATLAS_SPATIAL_PUBLISHER_DB_EXTRA_CSV_TABLE', 'eatlas_spatial_publisher_
 // NOTE: Changing the name of the content type also require to change the name of the template file: page--eatlas-publisher-region-set.tpl.php
 define('EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE', 'eatlas_publisher_region_set');
 
-define('EATLAS_SPATIAL_PUBLISHER_BLOCK_PREFIX', 'eatlas_publisher_map_'); // Max 32 char
-
 // Cache constants
 define('EATLAS_SPATIAL_PUBLISHER_FILE_CACHE_PREFIX', 'eatlas_publisher_fid_');
 define('EATLAS_SPATIAL_PUBLISHER_NODE_CACHE_PREFIX', 'eatlas_publisher_nid_');

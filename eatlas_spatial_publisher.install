@@ -38,6 +38,10 @@ function eatlas_spatial_publisher_uninstall () {
 
 	// Clear variables
 	variable_del('comment_' . EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+
+	// Clear cache
+	cache_clear_all(EATLAS_SPATIAL_PUBLISHER_FILE_CACHE_PREFIX . '*', 'cache', TRUE);
+	cache_clear_all(EATLAS_SPATIAL_PUBLISHER_NODE_CACHE_PREFIX . '*', 'cache', TRUE);
 }
 
 // Types:

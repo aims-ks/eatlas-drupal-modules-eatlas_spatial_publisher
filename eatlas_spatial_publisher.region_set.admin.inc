@@ -188,11 +188,14 @@ function _eatlas_spatial_publisher_regions_set_get_geojson(stdClass $node) {
 	if ($cache = cache_get(EATLAS_SPATIAL_PUBLISHER_NODE_CACHE_PREFIX . $node->nid)) {
 		$geojson_str = $cache->data;
 	} else {
+		// TODO Recursive
+
 		$geojson_content = _eatlas_spatial_publisher_regions_set_get_geojson_content($node);
 
+		$id_column_name = eatlas_commons_get_entity_value('node', $node, 'field_eatlas_publisher_id_col');
+		$parent_id_column_name = eatlas_commons_get_entity_value('node', $node, 'field_eatlas_publisher_pid_col');
+		$label_column_name = eatlas_commons_get_entity_value('node', $node, 'field_eatlas_publisher_label_col');
 
-		// ADD CHILDREN FEATURES
-		$feature_fk = 'Network_ID'; // TODO Get from node
 		// Build the feature map
 		$feature_map = array();
 		if ($geojson_content && $geojson_content['features']) {
@@ -200,26 +203,34 @@ function _eatlas_spatial_publisher_regions_set_get_geojson(stdClass $node) {
 			usort($geojson_content['features'], '_eatlas_spatial_publisher_regions_set_sort_features');
 
 			foreach($geojson_content['features'] as &$feature) {
-				if (isset($feature['properties'][$feature_fk])) {
+				if (isset($feature['properties'][$id_column_name])) {
 					$feature['properties']['_childNodes'] = array();
-					$feature['title'] = isset($feature['properties']['Network']) ? $feature['properties']['Network'] : t('Untitled');
+					$feature['title'] = isset($feature['properties'][$label_column_name]) ? $feature['properties'][$label_column_name] : t('Untitled');
 					$feature['nid'] = $node->nid;
-					$feature_map[$feature['properties'][$feature_fk]] = &$feature;
+					$feature['properties']['parent_id'] = isset($feature['properties'][$parent_id_column_name]) ? $feature['properties'][$parent_id_column_name] : NULL;
+					$feature_map[$feature['properties'][$id_column_name]] = &$feature;
 				}
 			}
 		}
 
+		// Add children, if any
 		$child_nodes = eatlas_spatial_publisher_region_set_load_children($node);
 		if ($child_nodes) {
 			foreach($child_nodes as $child_node) {
 				$child_features_arr = _eatlas_spatial_publisher_regions_set_get_geojson_content($child_node);
 				if ($child_features_arr && $child_features_arr['features']) {
+
+					//$child_id_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_id_col');
+					$child_parent_id_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_pid_col');
+					$child_label_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_label_col');
+
 					foreach($child_features_arr['features'] as $child_feature) {
-						if (isset($child_feature['properties'][$feature_fk])) {
-							$parent = &$feature_map[$child_feature['properties'][$feature_fk]];
+						if (isset($child_feature['properties'][$child_parent_id_column_name])) {
+							$parent = &$feature_map[$child_feature['properties'][$child_parent_id_column_name]];
 							if ($parent) {
-								$child_feature['title'] = isset($child_feature['properties']['MPA_NAME']) ? $child_feature['properties']['MPA_NAME'] : t('Untitled');
+								$child_feature['title'] = isset($child_feature['properties'][$child_label_column_name]) ? $child_feature['properties'][$child_label_column_name] : t('Untitled');
 								$child_feature['nid'] = $child_node->nid;
+								$child_feature['properties']['parent_id'] = $parent['id'];
 								$parent['properties']['_childNodes'][] = $child_feature;
 							}
 						}
@@ -233,6 +244,7 @@ function _eatlas_spatial_publisher_regions_set_get_geojson(stdClass $node) {
 			$geojson_str = drupal_json_encode($geojson_content);
 		}
 
+		// Cache the feature tree
 		cache_set(EATLAS_SPATIAL_PUBLISHER_NODE_CACHE_PREFIX . $node->nid, $geojson_str);
 	}
 
@@ -295,23 +307,26 @@ function _eatlas_spatial_publisher_regions_set_get_geojson_content(stdClass $nod
 function eatlas_spatial_publisher_regions_set_get_feature_tree($site_tid) {
 	$feature_map = array();
 
-	// TODO Find root node
-	// TODO Recursive
-	// TODO Get attribute keys ('Network_ID', 'Network', 'MPA_NAME') from node
-
 	$root_nodes = eatlas_spatial_publisher_region_set_load_roots($site_tid);
-	$feature_fk = 'Network_ID'; // TODO Get from node
 
 	if ($root_nodes) {
 		foreach($root_nodes as $root_node) {
+			// TODO Recursive
+			// TODO Use _eatlas_spatial_publisher_regions_set_get_geojson($root_node)
+
 			$features = _eatlas_spatial_publisher_regions_set_get_geojson_content($root_node);
 			if ($features && $features['features']) {
+
+				$id_column_name = eatlas_commons_get_entity_value('node', $root_node, 'field_eatlas_publisher_id_col');
+				//$parent_id_column_name = eatlas_commons_get_entity_value('node', $root_node, 'field_eatlas_publisher_pid_col');
+				$label_column_name = eatlas_commons_get_entity_value('node', $root_node, 'field_eatlas_publisher_label_col');
+
 				foreach($features['features'] as $feature) {
-					if (isset($feature['properties'][$feature_fk])) {
+					if (isset($feature['properties'][$id_column_name])) {
 						$feature['children'] = array();
-						$feature['title'] = isset($feature['properties']['Network']) ? $feature['properties']['Network'] : t('Untitled');
+						$feature['title'] = isset($feature['properties'][$label_column_name]) ? $feature['properties'][$label_column_name] : t('Untitled');
 						$feature['node'] = $root_node;
-						$feature_map[$feature['properties'][$feature_fk]] = $feature;
+						$feature_map[$feature['properties'][$id_column_name]] = $feature;
 					}
 				}
 			}
@@ -321,19 +336,25 @@ function eatlas_spatial_publisher_regions_set_get_feature_tree($site_tid) {
 				foreach($child_nodes as $child_node) {
 					$child_features_arr = _eatlas_spatial_publisher_regions_set_get_geojson_content($child_node);
 					if ($child_features_arr && $child_features_arr['features']) {
+
+						//$child_id_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_id_col');
+						$child_parent_id_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_pid_col');
+						$child_label_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_label_col');
+
 						foreach($child_features_arr['features'] as $child_feature) {
-							if (isset($child_feature['properties'][$feature_fk])) {
-								$parent = &$feature_map[$child_feature['properties'][$feature_fk]];
+							if (isset($child_feature['properties'][$child_parent_id_column_name])) {
+								$parent = &$feature_map[$child_feature['properties'][$child_parent_id_column_name]];
 								// If the parent was not found, create an artificial parent to hold the child
 								if (!$parent) {
 									$parent = array(
-										'id' => $child_feature['properties'][$feature_fk],
+										'id' => $child_feature['properties'][$child_parent_id_column_name],
 										'virtual' => TRUE,
 										'children' => array()
 									);
-									$feature_map[$child_feature['properties'][$feature_fk]] = $parent;
+									$feature_map[$child_feature['properties'][$child_parent_id_column_name]] = $parent;
 								}
-								$child_feature['title'] = isset($child_feature['properties']['MPA_NAME']) ? $child_feature['properties']['MPA_NAME'] : t('Untitled');
+								$child_feature['properties']['parent_id'] = $parent['id'];
+								$child_feature['title'] = isset($child_feature['properties'][$child_label_column_name]) ? $child_feature['properties'][$child_label_column_name] : t('Untitled');
 								$child_feature['node'] = $child_node;
 								$parent['children'][] = $child_feature;
 							}
