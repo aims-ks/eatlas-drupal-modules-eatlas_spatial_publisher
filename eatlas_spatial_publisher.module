@@ -13,8 +13,6 @@ include_once('eatlas_spatial_publisher.region_set.admin.inc');
 // Required to create the table of CSV files in site settings
 include_once('eatlas_spatial_publisher.extra_csv.admin.inc');
 
-include_once('eatlas_spatial_publisher.map_block.inc');
-
 /**
  * Structure of this module:
  *
