@@ -93,7 +93,15 @@ function eatlas_spatial_publisher_node_type_insert($content_type) {
 			'field_name' => 'field_eatlas_publisher_pid_col', // Max 32 characters!
 			'type' => 'text',
 			'label' => t('Parent ID column name'),
-			'description' => t('Name of the column which contains the ID of parent of the region, if any. NOTE: This field is currently ignored.'),
+			'description' => t('Name of the column which contains the ID of parent of the region, if any.'),
+			'required' => FALSE
+		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+
+		_eatlas_spatial_publisher_create_node_field(array(
+			'field_name' => 'field_eatlas_publisher_label_col', // Max 32 characters!
+			'type' => 'text',
+			'label' => t('Label column name'),
+			'description' => t('Name of the column which contains the label to be displayed.'),
 			'required' => FALSE
 		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 

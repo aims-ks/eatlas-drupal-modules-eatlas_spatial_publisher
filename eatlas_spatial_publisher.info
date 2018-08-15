@@ -29,5 +29,5 @@ dependencies[] = eatlas_commons (>=1.7)
 ; Attributes used by the update module.
 ; There fields needs to be removed if the module is migrated to Drupal.org
 project status url = "http://drupal.eatlas.org.au/modules/eatlas"
-version = "7.x-0.60"
+version = "7.x-0.61"
 project = "eatlas_spatial_publisher"
