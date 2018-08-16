@@ -2,6 +2,8 @@
 
 TODO
 
+Explain how GeoJSON and CSV get combined to create a unified GeoJSON
+
 Columns in settings (ID, Parent ID and Label)
 
 GeoJSON ID match CSV ID (same column name)

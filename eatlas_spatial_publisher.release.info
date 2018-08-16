@@ -9,5 +9,6 @@ creator = Gael Lafond, Marc Hammerton
 ;   This variable is an array, one cell per element. Use "\n" for new lines.
 ;   Those properties are used with release_notes and tags.
 ;   See: https://www.drupal.org/documentation/releases/types
-Bug fixes[] = Added missing field to the creation of the Region set content type.
-Bug fixes[] = Added documentation
+New features[] = In formatNumber, added optional parameter 'decimals'.
+Bug fixes[] = In MACRO_RelatedImages, changed 'gallerie' to 'gallery'.
+Bug fixes[] = Added documentation.

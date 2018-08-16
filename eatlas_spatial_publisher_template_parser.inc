@@ -265,10 +265,10 @@ class EAtlas_spatial_publisher_template_context {
 	/**
 	 * Add related images
 	 * $type:
-	 *   'gallerie': Images display like "diapositives".
+	 *   'gallery': Images display like "diapositives".
 	 *   'image_slider': Images shown using the "FlexSlider".
 	 */
-	function MACRO_RelatedImages($type='gallerie', $style='medium') {
+	function MACRO_RelatedImages($type='gallery', $style='medium') {
 		$output = '';
 
 		if (!empty($this->term)) {
@@ -301,7 +301,7 @@ class EAtlas_spatial_publisher_template_context {
 				$files = file_load_multiple($fids);
 
 				if (!empty($files)) {
-					if ($type === 'gallerie') {
+					if ($type === 'gallery') {
 						$output .= '<div class="related-images">';
 						foreach ($files as $file) {
 							$link = 'media/' . $file->fid;
@@ -393,9 +393,9 @@ class EAtlas_spatial_publisher_template_context {
 		return isset($properties[$property_name]) ? $properties[$property_name] === NULL || trim($properties[$property_name]) === '' : TRUE;
 	}
 
-	function formatNumber($number) {
+	function formatNumber($number, $decimals=0) {
 		if (is_numeric($number)) {
-			return number_format($number);
+			return number_format($number, $decimals);
 		}
 		return $number;
 	}
