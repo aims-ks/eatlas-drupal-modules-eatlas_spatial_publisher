@@ -3,10 +3,11 @@
 The template is defined in *eAtlas Region set* content type. It is used to construct an HTML page for each feature
 of the GeoJSON file, using the information found in the GeoJSON and CSV files.
 
-The template use the PHP language. It also define a context object found in the variable ```$c```, which contains
-many methods that can be used to get relevant information for the selected feature.
+The template use the PHP language. It also define a context instance ```$c``` from the class
+```EAtlas_spatial_publisher_template_context```, which contains
+many methods that can be used to get relevant information on the selected feature.
 
-Context methods:
+## Context methods ##
 
 * ```$c->MACRO_RelatedNodes($topic)```
 
@@ -626,7 +627,7 @@ Context methods:
 
     * **Return value**
 
-        *???*: TODO
+        *Associative array*: Associative array representing the feature. See example bellow for more info.
 
     * **Example**
 

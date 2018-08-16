@@ -2,17 +2,18 @@
 
 The content type ```eatlas_publisher_region_set``` is used to describe the levels of the feature tree,
 displayed on the navigation map.
-Each level have its own ```eatlas_publisher_region_set``` node, which contains a GeoJSON file, a CSV file
+Each navigation level have its own ```eatlas_publisher_region_set``` node, which contains a GeoJSON file, a CSV file
 and many other fields.
 
-The content type is created by the module<br/>
+The content type is created by the ```eatlas_spatial_publisher``` module<br/>
     file: ```eatlas_spatial_publisher.region_set.admin.inc```<br/>
     function: ```eatlas_spatial_publisher_node_type_insert```<br/>
 
 
 ## Content type fields ##
 
-Overview of the fields that are needed for this content type
+Overview of the fields for the ```eatlas_publisher_region_set``` content type. For information about how to use them,
+see the [Configuration](configuration.md) page.
 
 | LABEL                 | MACHINE NAME                     | FIELD TYPE            | WIDGET                    |
 |-----------------------|----------------------------------|-----------------------|---------------------------|
