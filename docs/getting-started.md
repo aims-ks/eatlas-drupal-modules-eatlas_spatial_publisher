@@ -1,12 +1,10 @@
+# Getting started #
+
 ## Installation ##
 
-1. Create the content type ```eatlas_publisher_region_set```.
+1. Extract the module files in ```drupal/sites/all/modules/eatlas/eatlas_spatial_publisher```
 
-    **NOTE**: The content type should be created by the module, but that part haven't been implemented yet.
-
-2. Extract the module files in ```drupal/sites/all/modules/eatlas/eatlas_spatial_publisher```
-
-3. Enable the module with ```https://eatlas.org.au/admin/modules```
+2. Enable the module with ```https://eatlas.org.au/admin/modules```
 
 ### Entities created ###
 
@@ -24,8 +22,10 @@ Database tables:
 Content type:
 * ```eatlas_publisher_region_set```
 
-**NOTE**: The content type is not created by the module yet. It needs to be created manually prior to the
-    installation of the module.
+**NOTE**: The content type is created by the module.<br/>
+    file: ```eatlas_spatial_publisher.region_set.admin.inc```<br/>
+    function: ```eatlas_spatial_publisher_node_type_insert```<br/>
+    For more info, see [Content type ```eatlas_publisher_region_set```](content-type-region-set.md)
 
 Cache:
 * ```eatlas_publisher_fid_[FID]```
@@ -37,9 +37,7 @@ Cache:
 
 ## Configuration ##
 
-Configure the module with ```https://eatlas.org.au/admin/config/eatlas/eatlas_spatial_publisher```
-
-You will need to 
+See [configuration](configuration.md) 
 
 
 ## Uninstall ##
