@@ -91,30 +91,50 @@ See [Content type ```eatlas_publisher_region_set```](content-type-region-set.md)
     The style is used to display the GeoJSON feature when it's not selected.<br/>
     Properties from the GeoJSON and CSV file can be used here:
 
-    * ```feature.get(PROPERTY_NAME)```<br/>
-        PROPERTY_NAME: String. Name of the GeoJSON property or CSV column.<br/>
-        Returns: String. The value for the specified property or CSV column, for the selected feature.
+    * ```feature.get(PROPERTY_NAME)```
 
-    The function *getAlphaColour* can also be used to change the opacity of an hexadecimal colour:
+        Get a property from the GeoJSON or CSV, for the selected feature.
 
-    * ```getAlphaColour(HEXADECIMAL_COLOR, OPACITY)```<br/>
-        HEXADECIMAL_COLOR: String. Hexadecimal colour. Example: *#FF3399*<br/>
-        OPACITY: Decimal. 1 for full opacity, 0 for transparent.<br/>
-        Returns: Array of decimal. Representation of the colour as an array of decimal value, between 0 and 1;
+        * **Parameters**
+
+            * ```PROPERTY_NAME```: *String* (mandatory). Name of the GeoJSON property or CSV column.
+
+        * **Return value**
+
+            *String*. The value for the specified property or CSV column, for the selected feature.
+
+    * ```getAlphaColour(HEXADECIMAL_COLOR, OPACITY)```
+
+        The function *getAlphaColour* can also be used to change the opacity of an hexadecimal colour:
+
+        * **Parameters**
+
+            * ```HEXADECIMAL_COLOR```: *String* (mandatory). Hexadecimal colour. Example: *#FF3399*
+
+            * ```OPACITY```: *Decimal* (mandatory). 1 for full opacity, 0 for transparent.
+
+        * **Return value**
+
+            *Array of decimal*. Representation of the colour as an array of decimal value, between 0 and 1;
             [Red, Green, Blue, Alpha]
 
-    Example:
+    **Example**
     ```
     new ol.style.Style({
-      'stroke': new ol.style.Stroke({
-        'color': feature.get('colour'),
-        'width': 1,
-      }),
-      'fill': new ol.style.Fill({
-        'color': getAlphaColour(feature.get('colour'), 0.5)
-      })
+        'stroke': new ol.style.Stroke({
+            'color': feature.get('colour'),
+            'width': 1,
+        }),
+        'fill': new ol.style.Fill({
+           'color': getAlphaColour(feature.get('colour'), 0.5)
+        })
     })
     ```
+
+    See [OpenLayers Style doc](https://openlayers.org/en/latest/apidoc/module-ol_style_Style.html)
+    for API documentation.
+
+    See the [Appendix](appendix.md) for style more examples.
 
 * **Mouse over style**: JavaScript code used to create a single or an array of OpenLayers *ol.style*.
     The style is used to display the GeoJSON feature when the mouse move over it.<br/>
@@ -134,4 +154,80 @@ See [Content type ```eatlas_publisher_region_set```](content-type-region-set.md)
 
 ## Supplementary CSV files ##
 
-TODO
+The GeoJSON / CSV file solution do not allow data to be stored like in a relational database.
+
+For example, let say we want to store a list of species found in each regions (represented by features on the navigation map).
+
+Each species have the following attributes:
+* *specie_ID*: A unique ID for the specie
+* *scientific_name*: Specie latin name
+* *common_name*: Specie common English name
+* *group*: Which group it belong to; dolphin, turtle, sea bird, etc
+* *layer*: Specie distribution layer
+
+Each species can occur in multiple regions.
+
+### Relational database analogy ###
+
+With a relational database, we would create a schema like this one:
+
+![Supplementary CSV - DB analogy](img/supplementary-csv-db-analogy.png)
+
+### Solution using CSV ###
+
+When using CSV files, we have to be more creative. We solve this problem in 2 different ways.
+
+Lets illustrate the solutions using the variable **species** and the variable **references**.
+
+**NOTE**: The following examples has been simplified for clarity.
+
+![Supplementary CSV - diagram](img/supplementary-csv.png)
+
+#### For the **species** ####
+
+* We added a specie_ids column to our *CSV metadata file*.
+    The column contains a list of specie IDs, separated by coma.
+* We created a new specie CSV file. Each row contains the information for one specie.
+* We upload the specie CSV file as a *supplementary CSV file*. We name the file's variable: *species*.
+* We added methods to the template context to help extract the relevant information.
+    See [Template](template.md) method **getCSVCell**.
+
+In the template, we can find the relevant species for each region like this:
+
+```
+<?php
+// Get the column "specie_ids" from the "CSV metadata file" file, for the selected feature
+$specie_ids_str = $c->get("specie_ids");
+$specie_ids = explode(',', $specie_ids_str);
+foreach ($specie_ids as $specie_id) {
+    // Find the common name of the current specie by looking in the column "common_name" of the variable "species",
+    // where the column "specie_id" match the current specie ID ($specie_id).
+    // NOTE: The method "getCSVCell", and other similar method, trim the input parameters to remove trailling spaces.
+    //             $c->getCSVCell($variable, $key_column, $value,     $column_name,  $default_value)
+    $common_name = $c->getCSVCell('species', 'specie_id', $specie_id, 'common_name', 'No name');
+    ...
+}
+?>
+```
+
+#### For the **references** ####
+
+* We didn't modify our *CSV metadata file*.
+* We created a new references CSV file. Each row contains the information for one reference. Each row also have a
+    column *feature_ids* containing the list of the ID of all relevant feature.
+* We upload the reference CSV file as a *supplementary CSV file*. We name the file's variable: *references*.
+* We added methods to the template context to help extract the relevant information.
+    See [Template](template.md) method **getCSVRowsMultiValueCell**.
+
+In the template, we can find the relevant references for each region like this:
+
+```
+<?php
+//                $c->getCSVRowsMultiValueCell($variable,    $key_column,   $value,                $delimiter)
+$reference_rows = $c->getCSVRowsMultiValueCell('references', 'feature_ids', $c->get("feature_id"));
+foreach ($reference_rows as $reference_row) {
+    $author = $reference_row['author'];
+    ...
+}
+?>
+```
