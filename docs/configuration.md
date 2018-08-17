@@ -131,6 +131,11 @@ See [Content type ```eatlas_publisher_region_set```](content-type-region-set.md)
     })
     ```
 
+    See [OpenLayers Style doc](https://openlayers.org/en/latest/apidoc/module-ol_style_Style.html)
+    for API documentation.
+
+    See the [Appendix](appendix.md) for style more examples.
+
 * **Mouse over style**: JavaScript code used to create a single or an array of OpenLayers *ol.style*.
     The style is used to display the GeoJSON feature when the mouse move over it.<br/>
     See *Style* above for more information.

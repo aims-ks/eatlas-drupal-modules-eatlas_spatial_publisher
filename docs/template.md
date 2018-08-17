@@ -7,6 +7,8 @@ The template use the PHP language. It also define a context instance ```$c``` fr
 ```EAtlas_spatial_publisher_template_context```, which contains
 many methods that can be used to get relevant information on the selected feature.
 
+See the [Appendix](appendix.md) for a complete template example.
+
 ## Context methods ##
 
 * ```$c->MACRO_RelatedNodes($topic)```
