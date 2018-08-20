@@ -15,7 +15,6 @@ Vocabulary:
 
 Database tables:
 * ```eatlas_spatial_publisher_site```
-* ```eatlas_spatial_publisher_region```
 * ```eatlas_spatial_publisher_menu```
 * ```eatlas_spatial_publisher_extra_csv```
 
@@ -50,7 +49,6 @@ See [configuration](configuration.md)
 
 Database tables (deleted by Drupal, as part of the DB schema API):
 * ```eatlas_spatial_publisher_site```
-* ```eatlas_spatial_publisher_region```
 * ```eatlas_spatial_publisher_menu```
 * ```eatlas_spatial_publisher_extra_csv```
 
