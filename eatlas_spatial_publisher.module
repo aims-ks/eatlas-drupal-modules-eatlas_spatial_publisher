@@ -110,7 +110,14 @@ function eatlas_spatial_publisher_menu() {
 
 	// Service which deliver a GeoJSON feature page (template with replaced with content)
 	$items['eatlas_spatial_publisher/%node/feature/%'] = array(
-		'page callback' => '_eatlas_spatial_publisher_regions_set_get_feature_template', // Name of the function to call
+		'page callback' => '_eatlas_spatial_publisher_regions_set_print_feature_template', // Name of the function to call
+		'page arguments' => array(1, 3), // The parameter "node" loaded with "node_load" and the feature ID
+		'access callback' => 'node_access', // Access granted if node can be viewed
+		'access arguments' => array('view', 1),
+		'file' => 'eatlas_spatial_publisher.region_set.admin.inc'
+	);
+	$items['eatlas_spatial_publisher/%node/featuretitle/%'] = array(
+		'page callback' => '_eatlas_spatial_publisher_regions_set_print_set_feature_template_title', // Name of the function to call
 		'page arguments' => array(1, 3), // The parameter "node" loaded with "node_load" and the feature ID
 		'access callback' => 'node_access', // Access granted if node can be viewed
 		'access arguments' => array('view', 1),
@@ -144,20 +151,7 @@ function eatlas_spatial_publisher_menu() {
 	);
 
 	// Edit one Spatial Publisher site
-	$items['admin/config/eatlas/eatlas_spatial_publisher/%taxonomy_term'] = array(
-		'title callback' => '_eatlas_spatial_publisher_site_title',
-		'title arguments' => array(4),
-		'description' => 'Edit Spatial Publisher site settings',
-		'page callback' => 'drupal_get_form',
-		'page arguments' => array('_eatlas_spatial_publisher_site_form', 4),
-
-		'access callback' => '_eatlas_spatial_publisher_site_edit_access',
-		'access arguments' => array(4),
-
-		'file' => 'eatlas_spatial_publisher.site.admin.inc'
-	);
-
-	// Edit region menu (contextual menu)
+	// (with contextual menu)
 	//   https://www.drupal.org/docs/7/administering-drupal-7-site/working-with-contextual-links
 	$items['admin/config/eatlas/eatlas_spatial_publisher/%taxonomy_term'] = array(
 		'title' => 'Edit region menu',

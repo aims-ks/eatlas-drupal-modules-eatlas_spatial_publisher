@@ -16,14 +16,14 @@ include_once('eatlas_spatial_publisher_template_parser.inc');
  *   https://api.drupal.org/api/drupal/modules%21node%21node.api.php/function/hook_node_info/7.x
  */
 function eatlas_spatial_publisher_node_info() {
-	return array(
-		EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE => array(
-			'name' => t('eAtlas Region set'),
-			'base' => 'node_content', // Needed to be displayed within "Structure > Content types"
-			'description' => t('A Spatial Publisher Region set'),
-			'locked' => FALSE
-		)
-	);
+    return array(
+        EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE => array(
+            'name' => t('eAtlas Region set'),
+            'base' => 'node_content', // Needed to be displayed within "Structure > Content types"
+            'description' => t('A Spatial Publisher Region set'),
+            'locked' => FALSE
+        )
+    );
 }
 
 /**
@@ -35,435 +35,500 @@ function eatlas_spatial_publisher_node_info() {
  *   Uninstalling the module delete the content type and all nodes created with it.
  */
 function eatlas_spatial_publisher_node_type_insert($content_type) {
-	if ($content_type->type == EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE) {
+    if ($content_type->type == EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE) {
 
-		// Preview image
-		$preview_image_config = array(
-			'field_name' => 'field_preview', // Max 32 characters!
-			'type' => 'file',
-			'label' => t('Preview image'),
-			'description' => t('This image is used as part of the article teaser on the site front page, search results and in article lists. The preview image is also used as a banner image for the article, which you can disable with the "Show banner" check box if necessary.'),
-			'settings' => array(
-				'file_extensions' => 'jpg jpeg gif png ico'
-			),
-			'required' => FALSE
-		);
-		if (module_exists('media')) {
-			$preview_image_config['widget'] = array(
-				'type' => 'media_generic',
-				'module' => 'media',
-				'settings' => array(
-					'allowed_types' => array(
-						'image' => 'image'
-					),
-					'allowed_schemes' => array(
-						'public' => 'public'
-					),
-					'progress_indicator' => 'throbber'
-				)
-			);
-		}
-		_eatlas_spatial_publisher_create_node_field($preview_image_config, EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+        // Preview image
+        $preview_image_config = array(
+            'field_name' => 'field_preview', // Max 32 characters!
+            'type' => 'file',
+            'label' => t('Preview image'),
+            'description' => t('This image is used as part of the article teaser on the site front page, search results and in article lists. The preview image is also used as a banner image for the article, which you can disable with the "Show banner" check box if necessary.'),
+            'settings' => array(
+                'file_extensions' => 'jpg jpeg gif png ico'
+            ),
+            'required' => FALSE
+        );
+        if (module_exists('media')) {
+            $preview_image_config['widget'] = array(
+                'type' => 'media_generic',
+                'module' => 'media',
+                'settings' => array(
+                    'allowed_types' => array(
+                        'image' => 'image'
+                    ),
+                    'allowed_schemes' => array(
+                        'public' => 'public'
+                    ),
+                    'progress_indicator' => 'throbber'
+                )
+            );
+        }
+        _eatlas_spatial_publisher_create_node_field($preview_image_config, EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 
-		// Add body field
-		node_add_body_field($content_type, t('Introduction article'));
+        // Add body field
+        node_add_body_field($content_type, t('Introduction article'));
 
-		// Add other fields
-		_eatlas_spatial_publisher_create_node_field(array(
-			'field_name' => 'field_eatlas_publisher_geojson', // Max 32 characters!
-			'type' => 'file',
-			'label' => t('GeoJSON file'),
-			'description' => t('GeoJSON file containing the polygons of the regions.'),
-			'settings' => array(
-				'file_extensions' => 'geojson',
-				'file_directory'  => 'spatial_publisher_uploads'
-			),
-			'required' => FALSE
-		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+        // Add other fields
+        _eatlas_spatial_publisher_create_node_field(array(
+            'field_name' => 'field_eatlas_publisher_geojson', // Max 32 characters!
+            'type' => 'file',
+            'label' => t('GeoJSON file'),
+            'description' => t('GeoJSON file containing the polygons of the regions.'),
+            'settings' => array(
+                'file_extensions' => 'geojson',
+                'file_directory'  => 'spatial_publisher_uploads'
+            ),
+            'required' => FALSE
+        ), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 
-		_eatlas_spatial_publisher_create_node_field(array(
-			'field_name' => 'field_eatlas_publisher_id_col', // Max 32 characters!
-			'type' => 'text',
-			'label' => t('ID column name'),
-			'description' => t('Name of the column which contains the ID of the region.'),
-			'required' => TRUE
-		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+        _eatlas_spatial_publisher_create_node_field(array(
+            'field_name' => 'field_eatlas_publisher_id_col', // Max 32 characters!
+            'type' => 'text',
+            'label' => t('ID column name'),
+            'description' => t('Name of the column which contains the ID of the region.'),
+            'required' => TRUE
+        ), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 
-		_eatlas_spatial_publisher_create_node_field(array(
-			'field_name' => 'field_eatlas_publisher_pid_col', // Max 32 characters!
-			'type' => 'text',
-			'label' => t('Parent ID column name'),
-			'description' => t('Name of the column which contains the ID of parent of the region, if any.'),
-			'required' => FALSE
-		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+        _eatlas_spatial_publisher_create_node_field(array(
+            'field_name' => 'field_eatlas_publisher_pid_col', // Max 32 characters!
+            'type' => 'text',
+            'label' => t('Parent ID column name'),
+            'description' => t('Name of the column which contains the ID of parent of the region, if any.'),
+            'required' => FALSE
+        ), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 
-		_eatlas_spatial_publisher_create_node_field(array(
-			'field_name' => 'field_eatlas_publisher_label_col', // Max 32 characters!
-			'type' => 'text',
-			'label' => t('Label column name'),
-			'description' => t('Name of the column which contains the label to be displayed.'),
-			'required' => FALSE
-		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+        _eatlas_spatial_publisher_create_node_field(array(
+            'field_name' => 'field_eatlas_publisher_label_col', // Max 32 characters!
+            'type' => 'text',
+            'label' => t('Label column name'),
+            'description' => t('Name of the column which contains the label to be displayed.'),
+            'required' => FALSE
+        ), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 
-		_eatlas_spatial_publisher_create_node_field(array(
-			'field_name' => 'field_eatlas_publisher_csv', // Max 32 characters!
-			'type' => 'file',
-			'label' => t('CSV metadata file'),
-			'description' => t('CSV file containing extra metadata for polygons defined in the GeoJSON file.'),
-			'settings' => array(
-				'file_extensions' => 'csv',
-				'file_directory'  => 'spatial_publisher_uploads'
-			),
-			'required' => FALSE
-		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+        _eatlas_spatial_publisher_create_node_field(array(
+            'field_name' => 'field_eatlas_publisher_csv', // Max 32 characters!
+            'type' => 'file',
+            'label' => t('CSV metadata file'),
+            'description' => t('CSV file containing extra metadata for polygons defined in the GeoJSON file.'),
+            'settings' => array(
+                'file_extensions' => 'csv',
+                'file_directory'  => 'spatial_publisher_uploads'
+            ),
+            'required' => FALSE
+        ), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 
-		_eatlas_spatial_publisher_create_node_field(array(
-			'field_name' => 'field_eatlas_publisher_template', // Max 32 characters!
-			'type' => 'text_long',
-			'widget' => array('type' => 'text_textarea'),
-			'label' => t('Template'),
-			'description' => t('Template used to display the metadata.'),
-			'required' => FALSE
-		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+        _eatlas_spatial_publisher_create_node_field(array(
+            'field_name' => 'field_eatlas_publisher_tpl_title', // Max 32 characters!
+            'type' => 'text',
+            'settings' => array(
+                'max_length' => 1024
+            ),
+            'label' => t('Template page title'),
+            'description' => t('Page title for each template pages. Support PHP code and template variables.'),
+            'required' => FALSE
+        ), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 
-		_eatlas_spatial_publisher_create_node_field(array(
-			'field_name' => 'field_eatlas_publisher_baselayer', // Max 32 characters!
-			'type' => 'text_long',
-			'widget' => array('type' => 'text_textarea'),
-			'label' => t('Map Base layer'),
-			'description' => t('An OpenLayer layer object to use as a Base layer. If none is specified, OSM layer will be used.'),
-			'required' => FALSE
-		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+        _eatlas_spatial_publisher_create_node_field(array(
+            'field_name' => 'field_eatlas_publisher_template', // Max 32 characters!
+            'type' => 'text_long',
+            'widget' => array('type' => 'text_textarea'),
+            'label' => t('Template'),
+            'description' => t('Template used to display the metadata.'),
+            'required' => FALSE
+        ), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 
-		_eatlas_spatial_publisher_create_node_field(array(
-			'field_name' => 'field_eatlas_publisher_style', // Max 32 characters!
-			'type' => 'text_long',
-			'widget' => array('type' => 'text_textarea'),
-			'label' => t('Style'),
-			'description' => t('The style used to draw the polygons.'),
-			'required' => FALSE
-		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+        _eatlas_spatial_publisher_create_node_field(array(
+            'field_name' => 'field_eatlas_publisher_baselayer', // Max 32 characters!
+            'type' => 'text_long',
+            'widget' => array('type' => 'text_textarea'),
+            'label' => t('Map Base layer'),
+            'description' => t('An OpenLayer layer object to use as a Base layer. If none is specified, OSM layer will be used.'),
+            'required' => FALSE
+        ), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 
-		_eatlas_spatial_publisher_create_node_field(array(
-			'field_name' => 'field_eatlas_publisher_mo_style', // Max 32 characters!
-			'type' => 'text_long',
-			'widget' => array('type' => 'text_textarea'),
-			'label' => t('Mouse over style'),
-			'description' => t('The style used when the mouse move over a polygon. If none is specified, the lines will appear 3x thicker.'),
-			'required' => FALSE
-		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+        _eatlas_spatial_publisher_create_node_field(array(
+            'field_name' => 'field_eatlas_publisher_style', // Max 32 characters!
+            'type' => 'text_long',
+            'widget' => array('type' => 'text_textarea'),
+            'label' => t('Style'),
+            'description' => t('The style used to draw the polygons.'),
+            'required' => FALSE
+        ), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 
-		_eatlas_spatial_publisher_create_node_field(array(
-			'field_name' => 'field_eatlas_publisher_hl_style', // Max 32 characters!
-			'type' => 'text_long',
-			'widget' => array('type' => 'text_textarea'),
-			'label' => t('Selected style'),
-			'description' => t('The style used to highlight the selected polygon. If none is specified, the lines will appear 3x thicker.'),
-			'required' => FALSE
-		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+        _eatlas_spatial_publisher_create_node_field(array(
+            'field_name' => 'field_eatlas_publisher_mo_style', // Max 32 characters!
+            'type' => 'text_long',
+            'widget' => array('type' => 'text_textarea'),
+            'label' => t('Mouse over style'),
+            'description' => t('The style used when the mouse move over a polygon. If none is specified, the lines will appear 3x thicker.'),
+            'required' => FALSE
+        ), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 
-		_eatlas_spatial_publisher_create_node_field(array(
-			'field_name' => 'field_eatlas_publisher_tid', // Max 32 characters!
-			'type' => 'list_text',
-			'label' => t('Site'),
-			'description' => t('The site associated with this region set.'),
-			'settings' => array(
-				'allowed_values_function' => '_eatlas_spatial_publisher_get_site_options'
-			),
-			'required' => TRUE
-		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+        _eatlas_spatial_publisher_create_node_field(array(
+            'field_name' => 'field_eatlas_publisher_hl_style', // Max 32 characters!
+            'type' => 'text_long',
+            'widget' => array('type' => 'text_textarea'),
+            'label' => t('Selected style'),
+            'description' => t('The style used to highlight the selected polygon. If none is specified, the lines will appear 3x thicker.'),
+            'required' => FALSE
+        ), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 
-		_eatlas_spatial_publisher_create_node_field(array(
-			'field_name' => 'field_eatlas_publisher_parent', // Max 32 characters!
-			'type' => 'number_integer',
-			'label' => t('Parent'),
-			'description' => t('Parent region set node ID. Leave blank to create a new Map.'),
-			'required' => FALSE
-		), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
+        _eatlas_spatial_publisher_create_node_field(array(
+            'field_name' => 'field_eatlas_publisher_tid', // Max 32 characters!
+            'type' => 'list_text',
+            'label' => t('Site'),
+            'description' => t('The site associated with this region set.'),
+            'settings' => array(
+                'allowed_values_function' => '_eatlas_spatial_publisher_get_site_options'
+            ),
+            'required' => TRUE
+        ), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 
-		node_type_save($content_type);
+        _eatlas_spatial_publisher_create_node_field(array(
+            'field_name' => 'field_eatlas_publisher_parent', // Max 32 characters!
+            'type' => 'number_integer',
+            'label' => t('Parent'),
+            'description' => t('Parent region set node ID. Leave blank to create a new Map.'),
+            'required' => FALSE
+        ), EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE);
 
-		// Disable comments
-		variable_set('comment_' . EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE, 0);
-	}
+        node_type_save($content_type);
+
+        // Disable comments
+        variable_set('comment_' . EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE, 0);
+    }
 }
 
 function _eatlas_spatial_publisher_regions_set_get_geojson(stdClass $node) {
-	// We are returning JSON, so tell the browser.
-	drupal_add_http_header('Content-Type', 'application/json');
+    // We are returning JSON, so tell the browser.
+    drupal_add_http_header('Content-Type', 'application/json');
 
-	$geojson_str = '';
-	if ($cache = cache_get(EATLAS_SPATIAL_PUBLISHER_NODE_CACHE_PREFIX . $node->nid)) {
-		$geojson_str = $cache->data;
-	} else {
-		$geojson_content = _eatlas_spatial_publisher_regions_set_get_geojson_content_from_node($node);
+    $geojson_str = '';
+    if ($cache = cache_get(EATLAS_SPATIAL_PUBLISHER_NODE_CACHE_PREFIX . $node->nid)) {
+        $geojson_str = $cache->data;
+    } else {
+        $geojson_content = _eatlas_spatial_publisher_regions_set_get_geojson_content_from_node($node);
 
-		if (!empty($geojson_content)) {
-			// Merge the CSV metadata to the GeoJSON features
-			$geojson_str = drupal_json_encode($geojson_content);
-		}
+        if (!empty($geojson_content)) {
+            // Merge the CSV metadata to the GeoJSON features
+            $geojson_str = drupal_json_encode($geojson_content);
+        }
 
-		// Cache the feature tree
-		cache_set(EATLAS_SPATIAL_PUBLISHER_NODE_CACHE_PREFIX . $node->nid, $geojson_str);
-	}
+        // Cache the feature tree
+        cache_set(EATLAS_SPATIAL_PUBLISHER_NODE_CACHE_PREFIX . $node->nid, $geojson_str);
+    }
 
-	if ($geojson_str) {
-		print $geojson_str;
-	}
+    if ($geojson_str) {
+        print $geojson_str;
+    }
 }
 
 function _eatlas_spatial_publisher_regions_set_get_geojson_content_from_node(stdClass $node) {
-	// TODO Recursive
-	$geojson_content = _eatlas_spatial_publisher_regions_set_get_geojson_content($node);
+    // TODO Recursive
+    $geojson_content = _eatlas_spatial_publisher_regions_set_get_geojson_content($node);
 
-	// Build the feature map
-	$feature_index_map = array();
-	if ($geojson_content && $geojson_content['features']) {
-		$id_column_name = eatlas_commons_get_entity_value('node', $node, 'field_eatlas_publisher_id_col');
-		$parent_id_column_name = eatlas_commons_get_entity_value('node', $node, 'field_eatlas_publisher_pid_col');
-		$label_column_name = eatlas_commons_get_entity_value('node', $node, 'field_eatlas_publisher_label_col');
+    // Build the feature map
+    $feature_index_map = array();
+    if ($geojson_content && $geojson_content['features']) {
+        $id_column_name = eatlas_commons_get_entity_value('node', $node, 'field_eatlas_publisher_id_col');
+        $parent_id_column_name = eatlas_commons_get_entity_value('node', $node, 'field_eatlas_publisher_pid_col');
+        $label_column_name = eatlas_commons_get_entity_value('node', $node, 'field_eatlas_publisher_label_col');
 
-		usort($geojson_content['features'], '_eatlas_spatial_publisher_regions_set_sort_features');
+        usort($geojson_content['features'], '_eatlas_spatial_publisher_regions_set_sort_features');
 
-		foreach($geojson_content['features'] as &$feature) {
-			if (isset($feature['properties'][$id_column_name])) {
-				$feature['properties']['_childNodes'] = array();
-				$feature['title'] = isset($feature['properties'][$label_column_name]) ? $feature['properties'][$label_column_name] : t('Untitled');
-				$feature['nid'] = $node->nid;
-				$feature['properties']['_parent_id'] = isset($feature['properties'][$parent_id_column_name]) ? $feature['properties'][$parent_id_column_name] : NULL;
-				$feature_index_map[$feature['properties'][$id_column_name]] = &$feature;
-			}
-		}
-	}
+        foreach($geojson_content['features'] as &$feature) {
+            if (isset($feature['properties'][$id_column_name])) {
+                $feature['properties']['_childNodes'] = array();
+                $feature['title'] = isset($feature['properties'][$label_column_name]) ? $feature['properties'][$label_column_name] : t('Untitled');
+                $feature['nid'] = $node->nid;
+                $feature['properties']['_parent_id'] = isset($feature['properties'][$parent_id_column_name]) ? $feature['properties'][$parent_id_column_name] : NULL;
+                $feature_index_map[$feature['properties'][$id_column_name]] = &$feature;
+            }
+        }
+    }
 
-	// Add children, if any
-	$child_nodes = eatlas_spatial_publisher_region_set_load_children($node);
-	if ($child_nodes) {
-		foreach($child_nodes as $child_node) {
-			$child_features_arr = _eatlas_spatial_publisher_regions_set_get_geojson_content($child_node);
-			if ($child_features_arr && $child_features_arr['features']) {
+    // Add children, if any
+    $child_nodes = eatlas_spatial_publisher_region_set_load_children($node);
+    if ($child_nodes) {
+        foreach($child_nodes as $child_node) {
+            $child_features_arr = _eatlas_spatial_publisher_regions_set_get_geojson_content($child_node);
+            if ($child_features_arr && $child_features_arr['features']) {
 
-				//$child_id_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_id_col');
-				$child_parent_id_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_pid_col');
-				$child_label_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_label_col');
+                //$child_id_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_id_col');
+                $child_parent_id_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_pid_col');
+                $child_label_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_label_col');
 
-				foreach($child_features_arr['features'] as $child_feature) {
-					if (isset($child_feature['properties'][$child_parent_id_column_name])) {
-						$parent = &$feature_index_map[$child_feature['properties'][$child_parent_id_column_name]];
-						if ($parent) {
-							$child_feature['title'] = isset($child_feature['properties'][$child_label_column_name]) ? $child_feature['properties'][$child_label_column_name] : t('Untitled');
-							$child_feature['nid'] = $child_node->nid;
-							$child_feature['properties']['_parent_id'] = $parent['id'];
-							$parent['properties']['_childNodes'][] = $child_feature;
-						}
-					}
-				}
-			}
-		}
-	}
+                foreach($child_features_arr['features'] as $child_feature) {
+                    if (isset($child_feature['properties'][$child_parent_id_column_name])) {
+                        $parent = &$feature_index_map[$child_feature['properties'][$child_parent_id_column_name]];
+                        if ($parent) {
+                            $child_feature['title'] = isset($child_feature['properties'][$child_label_column_name]) ? $child_feature['properties'][$child_label_column_name] : t('Untitled');
+                            $child_feature['nid'] = $child_node->nid;
+                            $child_feature['properties']['_parent_id'] = $parent['id'];
+                            $parent['properties']['_childNodes'][] = $child_feature;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-	return $geojson_content;
+    return $geojson_content;
 }
 
 // For debug purpose only
 /*
 function _eatlas_spatial_publisher_debug_geojson($geojson_obj) {
-	return "{\n" .
-		__eatlas_spatial_publisher_debug_geojson($geojson_obj, 1) . "\n" .
-		"}\n";
+    return "{\n" .
+        __eatlas_spatial_publisher_debug_geojson($geojson_obj, 1) . "\n" .
+        "}\n";
 }
 function __eatlas_spatial_publisher_debug_geojson($geojson_obj, $indent = 0) {
-	$tab = str_repeat('    ', $indent);
+    $tab = str_repeat('    ', $indent);
 
-	$output = '';
-	foreach ($geojson_obj as $key => $value) {
-		$output .= $tab . check_plain($key) . ' => ';
-		if (is_array($value)) {
-			if ($key === 'coordinates') {
-				$output .= "{ ... }\n";
-			} else {
-				$output .= "{\n";
-				$output .= __eatlas_spatial_publisher_debug_geojson($value, $indent+1);
-				$output .= $tab . "}\n";
-			}
-		} else {
-			$output .= check_plain($value) . "\n";
-		}
-	}
+    $output = '';
+    foreach ($geojson_obj as $key => $value) {
+        $output .= $tab . check_plain($key) . ' => ';
+        if (is_array($value)) {
+            if ($key === 'coordinates') {
+                $output .= "{ ... }\n";
+            } else {
+                $output .= "{\n";
+                $output .= __eatlas_spatial_publisher_debug_geojson($value, $indent+1);
+                $output .= $tab . "}\n";
+            }
+        } else {
+            $output .= check_plain($value) . "\n";
+        }
+    }
 
-	return $output;
+    return $output;
 }
 */
 
 function _eatlas_spatial_publisher_regions_set_sort_features($feature_a, $feature_b) {
-	$feature_a_ignore = FALSE;
-	if (isset($feature_a['properties']['menu_ignore']) && $feature_a['properties']['menu_ignore']) {
-		$feature_a_ignore = TRUE;
-	}
+    $feature_a_ignore = FALSE;
+    if (isset($feature_a['properties']['menu_ignore']) && $feature_a['properties']['menu_ignore']) {
+        $feature_a_ignore = TRUE;
+    }
 
-	$feature_b_ignore = FALSE;
-	if (isset($feature_b['properties']['menu_ignore']) && $feature_b['properties']['menu_ignore']) {
-		$feature_b_ignore = TRUE;
-	}
+    $feature_b_ignore = FALSE;
+    if (isset($feature_b['properties']['menu_ignore']) && $feature_b['properties']['menu_ignore']) {
+        $feature_b_ignore = TRUE;
+    }
 
-	// If they are both ignore, or both NOT ignore, the order doesn't matter
-	if ($feature_a_ignore === $feature_b_ignore) {
-		return -1;
-	}
+    // If they are both ignore, or both NOT ignore, the order doesn't matter
+    if ($feature_a_ignore === $feature_b_ignore) {
+        return -1;
+    }
 
-	return $feature_a_ignore ? -1 : 1;
+    return $feature_a_ignore ? -1 : 1;
 }
 
 function _eatlas_spatial_publisher_regions_set_get_geojson_content(stdClass $node) {
-	$geojson_file_id = _eatlas_spatial_publisher_region_get_fid($node, 'field_eatlas_publisher_geojson');
-	$csv_file_id = _eatlas_spatial_publisher_region_get_fid($node, 'field_eatlas_publisher_csv');
+    $geojson_file_id = _eatlas_spatial_publisher_region_get_fid($node, 'field_eatlas_publisher_geojson');
+    $csv_file_id = _eatlas_spatial_publisher_region_get_fid($node, 'field_eatlas_publisher_csv');
 
-	// GeoJSON
-	$geojson_content = array();
-	if ($geojson_file_id !== NULL) {
-		// Load the Drupal file object associated with the file ID
-		$geojson_file = file_load($geojson_file_id);
+    // GeoJSON
+    $geojson_content = array();
+    if ($geojson_file_id !== NULL) {
+        // Load the Drupal file object associated with the file ID
+        $geojson_file = file_load($geojson_file_id);
 
-		// Parse the file content
-		$geojson_content = _eatlas_spatial_publisher_region_parse_geojson($geojson_file);
-	}
+        // Parse the file content
+        $geojson_content = _eatlas_spatial_publisher_region_parse_geojson($geojson_file);
+    }
 
-	if (!empty($geojson_content)) {
-		// CSV
-		$csv_content = NULL;
-		if ($csv_file_id !== NULL) {
-			// Load the Drupal file object associated with the file ID
-			$csv_file = file_load($csv_file_id);
+    if (!empty($geojson_content)) {
+        // CSV
+        $csv_content = NULL;
+        if ($csv_file_id !== NULL) {
+            // Load the Drupal file object associated with the file ID
+            $csv_file = file_load($csv_file_id);
 
-			// Parse the file content
-			$csv_content = _eatlas_spatial_publisher_region_parse_csv($node, $csv_file);
-		}
+            // Parse the file content
+            $csv_content = _eatlas_spatial_publisher_region_parse_csv($node, $csv_file);
+        }
 
-		// Merge the CSV metadata to the GeoJSON features
-		return _eatlas_spatial_publisher_region_merge_geojson_csv($node, $geojson_content, $csv_content);
-	}
+        // Merge the CSV metadata to the GeoJSON features
+        return _eatlas_spatial_publisher_region_merge_geojson_csv($node, $geojson_content, $csv_content);
+    }
 
-	return NULL;
+    return NULL;
 }
 
 function eatlas_spatial_publisher_regions_set_get_feature_tree($site_tid) {
-	$feature_map = array();
+    $feature_map = array();
 
-	$root_nodes = eatlas_spatial_publisher_region_set_load_roots($site_tid);
+    $root_nodes = eatlas_spatial_publisher_region_set_load_roots($site_tid);
 
-	if ($root_nodes) {
-		foreach($root_nodes as $root_node) {
-			// TODO Use _eatlas_spatial_publisher_regions_set_get_geojson_content_from_node($root_node)
+    if ($root_nodes) {
+        foreach($root_nodes as $root_node) {
+            // TODO Use _eatlas_spatial_publisher_regions_set_get_geojson_content_from_node($root_node)
 
-			$features = _eatlas_spatial_publisher_regions_set_get_geojson_content($root_node);
-			if ($features && $features['features']) {
+            $features = _eatlas_spatial_publisher_regions_set_get_geojson_content($root_node);
+            if ($features && $features['features']) {
 
-				$id_column_name = eatlas_commons_get_entity_value('node', $root_node, 'field_eatlas_publisher_id_col');
-				//$parent_id_column_name = eatlas_commons_get_entity_value('node', $root_node, 'field_eatlas_publisher_pid_col');
-				$label_column_name = eatlas_commons_get_entity_value('node', $root_node, 'field_eatlas_publisher_label_col');
+                $id_column_name = eatlas_commons_get_entity_value('node', $root_node, 'field_eatlas_publisher_id_col');
+                //$parent_id_column_name = eatlas_commons_get_entity_value('node', $root_node, 'field_eatlas_publisher_pid_col');
+                $label_column_name = eatlas_commons_get_entity_value('node', $root_node, 'field_eatlas_publisher_label_col');
 
-				foreach($features['features'] as $feature) {
-					if (isset($feature['properties'][$id_column_name])) {
-						$feature['children'] = array();
-						$feature['title'] = isset($feature['properties'][$label_column_name]) ? $feature['properties'][$label_column_name] : t('Untitled');
-						$feature['node'] = $root_node;
-						$feature_map[$feature['properties'][$id_column_name]] = $feature;
-					}
-				}
-			}
+                foreach($features['features'] as $feature) {
+                    if (isset($feature['properties'][$id_column_name])) {
+                        $feature['children'] = array();
+                        $feature['title'] = isset($feature['properties'][$label_column_name]) ? $feature['properties'][$label_column_name] : t('Untitled');
+                        $feature['node'] = $root_node;
+                        $feature_map[$feature['properties'][$id_column_name]] = $feature;
+                    }
+                }
+            }
 
-			$child_nodes = eatlas_spatial_publisher_region_set_load_children($root_node);
-			if ($child_nodes) {
-				foreach($child_nodes as $child_node) {
-					$child_features_arr = _eatlas_spatial_publisher_regions_set_get_geojson_content($child_node);
-					if ($child_features_arr && $child_features_arr['features']) {
+            $child_nodes = eatlas_spatial_publisher_region_set_load_children($root_node);
+            if ($child_nodes) {
+                foreach($child_nodes as $child_node) {
+                    $child_features_arr = _eatlas_spatial_publisher_regions_set_get_geojson_content($child_node);
+                    if ($child_features_arr && $child_features_arr['features']) {
 
-						//$child_id_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_id_col');
-						$child_parent_id_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_pid_col');
-						$child_label_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_label_col');
+                        //$child_id_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_id_col');
+                        $child_parent_id_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_pid_col');
+                        $child_label_column_name = eatlas_commons_get_entity_value('node', $child_node, 'field_eatlas_publisher_label_col');
 
-						foreach($child_features_arr['features'] as $child_feature) {
-							if (isset($child_feature['properties'][$child_parent_id_column_name])) {
-								$parent = &$feature_map[$child_feature['properties'][$child_parent_id_column_name]];
-								// If the parent was not found, create an artificial parent to hold the child
-								if (!$parent) {
-									$parent = array(
-										'id' => $child_feature['properties'][$child_parent_id_column_name],
-										'virtual' => TRUE,
-										'children' => array()
-									);
-									$feature_map[$child_feature['properties'][$child_parent_id_column_name]] = $parent;
-								}
-								$child_feature['properties']['_parent_id'] = $parent['id'];
-								$child_feature['title'] = isset($child_feature['properties'][$child_label_column_name]) ? $child_feature['properties'][$child_label_column_name] : t('Untitled');
-								$child_feature['node'] = $child_node;
-								$parent['children'][] = $child_feature;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
+                        foreach($child_features_arr['features'] as $child_feature) {
+                            if (isset($child_feature['properties'][$child_parent_id_column_name])) {
+                                $parent = &$feature_map[$child_feature['properties'][$child_parent_id_column_name]];
+                                // If the parent was not found, create an artificial parent to hold the child
+                                if (!$parent) {
+                                    $parent = array(
+                                        'id' => $child_feature['properties'][$child_parent_id_column_name],
+                                        'virtual' => TRUE,
+                                        'children' => array()
+                                    );
+                                    $feature_map[$child_feature['properties'][$child_parent_id_column_name]] = $parent;
+                                }
+                                $child_feature['properties']['_parent_id'] = $parent['id'];
+                                $child_feature['title'] = isset($child_feature['properties'][$child_label_column_name]) ? $child_feature['properties'][$child_label_column_name] : t('Untitled');
+                                $child_feature['node'] = $child_node;
+                                $parent['children'][] = $child_feature;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-	return $feature_map;
+    return $feature_map;
 }
 
 // Find the node associated with a feature ID
 function eatlas_spatial_publisher_regions_set_get_feature_node($site_tid, $feature_id) {
-	if ($site_tid) {
-		$feature_tree = eatlas_spatial_publisher_regions_set_get_feature_tree($site_tid);
-		$feature_node = _eatlas_spatial_publisher_regions_set_find_feature_node($feature_tree, $feature_id);
-		return $feature_node;
-	}
-	return NULL;
+    if ($site_tid) {
+        $feature_tree = eatlas_spatial_publisher_regions_set_get_feature_tree($site_tid);
+        $feature_node = _eatlas_spatial_publisher_regions_set_find_feature_node($feature_tree, $feature_id);
+        return $feature_node;
+    }
+    return NULL;
 }
 
 // Find the node associated with a feature ID, from the feature tree (as returned by eatlas_spatial_publisher_regions_set_get_feature_tree)
 function _eatlas_spatial_publisher_regions_set_find_feature_node($feature_tree, $feature_id) {
-	if ($feature_tree && count($feature_tree) > 0) {
-		foreach ($feature_tree as $current_feature) {
-			$current_feature_id = isset($current_feature['id']) ? $current_feature['id'] : NULL;
-			if ($current_feature_id === $feature_id) {
-				return $current_feature['node'];
-			}
-			if (isset($current_feature['children']) && count($current_feature['children']) > 0) {
-				$branch_found_node = _eatlas_spatial_publisher_regions_set_find_feature_node($current_feature['children'], $feature_id);
-				if ($branch_found_node !== NULL) {
-					return $branch_found_node;
-				}
-			}
-		}
-	}
-	return NULL;
+    if ($feature_tree && count($feature_tree) > 0) {
+        foreach ($feature_tree as $current_feature) {
+            $current_feature_id = isset($current_feature['id']) ? $current_feature['id'] : NULL;
+            if ($current_feature_id === $feature_id) {
+                return $current_feature['node'];
+            }
+            if (isset($current_feature['children']) && count($current_feature['children']) > 0) {
+                $branch_found_node = _eatlas_spatial_publisher_regions_set_find_feature_node($current_feature['children'], $feature_id);
+                if ($branch_found_node !== NULL) {
+                    return $branch_found_node;
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
+// Get raw title.
+// Example: "Coral Sea marine park"
+function _eatlas_spatial_publisher_regions_set_get_feature_template_title($node, $feature_id) {
+    $feature = eatlas_spatial_publisher_get_feature_from_node($node, $feature_id);
+
+    if ($node && $feature) {
+        return eAtlas_spatial_publisher_parse_template_title($node, $feature);
+    }
+
+    return NULL;
+}
+
+// Set the page title and return the full Drupal page title.
+// Example: "Coral Sea marine park | Australian Marine Parks Science Atlas"
+function _eatlas_spatial_publisher_regions_set_set_feature_template_title($node, $feature_id) {
+    return _eatlas_spatial_publisher_get_page_title(
+        drupal_set_title(_eatlas_spatial_publisher_regions_set_get_feature_template_title($node, $feature_id)));
+}
+
+function _eatlas_spatial_publisher_get_page_title($raw_page_title) {
+    $variables = array();
+    $variables['head_title_array'] = array(
+      'title' => strip_tags($raw_page_title),
+      'name' => check_plain(variable_get('site_name', 'Drupal')),
+    );
+
+    if (function_exists('eatlas_branding_preprocess_html')) {
+        eatlas_branding_preprocess_html($variables);
+    }
+
+    return implode(' | ', $variables['head_title_array']);
+}
+
+function eatlas_spatial_publisher_get_page_title($node) {
+    return _eatlas_spatial_publisher_get_page_title($node->title);
+}
+
+// Set the page title and print the full Drupal page title to the page content.
+// Example: "Coral Sea marine park | Australian Marine Parks Science Atlas"
+// NOTE: This is used with Drupal API call, to be able to get the page title using JavaScript.
+//   Example: http://marineparks.eatlas.localhost/eatlas_spatial_publisher/27184/featuretitle/CMR_CS_CS
+function _eatlas_spatial_publisher_regions_set_print_set_feature_template_title($node, $feature_id) {
+    print _eatlas_spatial_publisher_regions_set_set_feature_template_title($node, $feature_id);
 }
 
 function _eatlas_spatial_publisher_regions_set_get_feature_template($node, $feature_id) {
-	// http://aims.ereefs.localhost/eatlas_spatial_publisher/4003/feature/qld
+    // http://aims.ereefs.localhost/eatlas_spatial_publisher/4003/feature/qld
 
-	$feature = eatlas_spatial_publisher_get_feature_from_node($node, $feature_id);
-	// Put the content of the template in a "section" to prevent unbalanced code from messing the page
-	// NOTE: It's unlikely that the template contains "section" tags.
-	//   When the browser sees the end of the section tag,
-	//   it closes everything that hasn't been closed in the section.
-	print '<section>' . "\n";
+    $feature = eatlas_spatial_publisher_get_feature_from_node($node, $feature_id);
+    // Put the content of the template in a "section" to prevent unbalanced code from messing the page
+    // NOTE: It's unlikely that the template contains "section" tags.
+    //   When the browser sees the end of the section tag,
+    //   it closes everything that hasn't been closed in the section.
+    $output = '<section>' . "\n";
 
-	print '<!-- Apply same style as the body field of an article (adjust line-height) -->' . "\n";
-	print '<div class="field field-name-body field-type-text-with-summary">' . "\n";
+    $output .= '<!-- Apply same style as the body field of an article (adjust line-height) -->' . "\n";
+    $output .= '<div class="field field-name-body field-type-text-with-summary">' . "\n";
 
-	if ($node && $feature) {
-		// Output the feature in the source, to be used as a reference while making the template
-		// TODO Give access to this in the backend, when making the template!
-		//print "<!--\nFEATURE\n" . print_r($feature, TRUE) . "\n-->";
+    if ($node && $feature) {
+        // Output the feature in the source, to be used as a reference while making the template
+        // TODO Give access to this in the backend, when making the template!
+        //$output .= "<!--\nFEATURE\n" . print_r($feature, TRUE) . "\n-->";
 
-		eAtlas_spatial_publisher_eval_template($node, $feature);
-	} else {
-		print '<div>Feature not found.</div>' . "\n";
-	}
+        $output .= eAtlas_spatial_publisher_parse_template($node, $feature);
+    } else {
+        $output .= '<div>Feature not found.</div>' . "\n";
+    }
 
-	print '</div> <!-- End of field-type-text-with-summary -->' . "\n";
+    $output .= '</div> <!-- End of field-type-text-with-summary -->' . "\n";
 
-	print '</section>' . "\n";
+    $output .= '</section>' . "\n";
+
+    return $output;
+}
+
+// Print the template to the page content.
+// NOTE: This is used with Drupal API call, to be able to get the page content using JavaScript.
+//   Example: http://marineparks.eatlas.localhost/eatlas_spatial_publisher/27184/feature/CMR_CS_CS
+function _eatlas_spatial_publisher_regions_set_print_feature_template($node, $feature_id) {
+    print _eatlas_spatial_publisher_regions_set_get_feature_template($node, $feature_id);
 }
 
 /**
@@ -478,12 +543,12 @@ function _eatlas_spatial_publisher_regions_set_get_feature_template($node, $feat
  *   deleted or new sites are created.
  */
 function _eatlas_spatial_publisher_get_site_options() {
-	$site_terms = eatlas_spatial_publisher_site_load_terms();
-	$sites = array();
-	foreach ($site_terms as $site_term) {
-		$sites[$site_term->tid] = $site_term->name;
-	}
-	return $sites;
+    $site_terms = eatlas_spatial_publisher_site_load_terms();
+    $sites = array();
+    foreach ($site_terms as $site_term) {
+        $sites[$site_term->tid] = $site_term->name;
+    }
+    return $sites;
 }
 
 /**
@@ -499,27 +564,27 @@ function _eatlas_spatial_publisher_get_site_options() {
  *   sense to merge the attributes in one configuration object (for simplicity).
  */
 function _eatlas_spatial_publisher_create_node_field($field_config, $bundle_name) {
-	$field_name = $field_config['field_name'];
+    $field_name = $field_config['field_name'];
 
-	$field = field_info_field($field_name);
-	// If the field do not exists
-	if (!$field) {
-		$field = field_create_field($field_config);
-		watchdog('eatlas_spatial_publisher', 'Field "'.$field_name.'" created');
-	} else {
-		watchdog('eatlas_spatial_publisher', 'Field "'.$field_name.'" already exists');
-	}
+    $field = field_info_field($field_name);
+    // If the field do not exists
+    if (!$field) {
+        $field = field_create_field($field_config);
+        watchdog('eatlas_spatial_publisher', 'Field "'.$field_name.'" created');
+    } else {
+        watchdog('eatlas_spatial_publisher', 'Field "'.$field_name.'" already exists');
+    }
 
-	$instance = field_info_instance('node', $field_name, $bundle_name);
-	if (!$instance){
-		$field_instance_config = $field_config;
-		$field_instance_config['entity_type'] = 'node';
-		$field_instance_config['bundle'] = $bundle_name;
-		field_create_instance($field_instance_config);
-		watchdog('eatlas_spatial_publisher', 'Field "'.$field_name.'" added to "'.$bundle_name.'".');
-	} else {
-		watchdog('eatlas_spatial_publisher', 'Field "'.$field_name.'" is already setup for "'.$bundle_name.'".');
-	}
+    $instance = field_info_instance('node', $field_name, $bundle_name);
+    if (!$instance){
+        $field_instance_config = $field_config;
+        $field_instance_config['entity_type'] = 'node';
+        $field_instance_config['bundle'] = $bundle_name;
+        field_create_instance($field_instance_config);
+        watchdog('eatlas_spatial_publisher', 'Field "'.$field_name.'" added to "'.$bundle_name.'".');
+    } else {
+        watchdog('eatlas_spatial_publisher', 'Field "'.$field_name.'" is already setup for "'.$bundle_name.'".');
+    }
 }
 
 /**
@@ -527,114 +592,114 @@ function _eatlas_spatial_publisher_create_node_field($field_config, $bundle_name
  * List all Region Sets associated with a site.
  */
 function eatlas_spatial_publisher_region_set_load_all($site_tid) {
-	if ($site_tid === NULL) {
-		return array();
-	}
+    if ($site_tid === NULL) {
+        return array();
+    }
 
-	$query = new EntityFieldQuery();
-	$result = $query->entityCondition('entity_type', 'node')
-		->entityCondition('bundle', EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE)
-		->fieldCondition('field_eatlas_publisher_tid', 'value', $site_tid, '=')
-		->execute();
+    $query = new EntityFieldQuery();
+    $result = $query->entityCondition('entity_type', 'node')
+        ->entityCondition('bundle', EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE)
+        ->fieldCondition('field_eatlas_publisher_tid', 'value', $site_tid, '=')
+        ->execute();
 
-	if (isset($result['node']) && !empty($result['node'])) {
-		return node_load_multiple(array_keys($result['node']));
-	}
+    if (isset($result['node']) && !empty($result['node'])) {
+        return node_load_multiple(array_keys($result['node']));
+    }
 
-	return array();
+    return array();
 }
 
 
 function eatlas_spatial_publisher_region_set_load_roots($site_tid) {
-	if ($site_tid === NULL) {
-		return array();
-	}
+    if ($site_tid === NULL) {
+        return array();
+    }
 
-	// Load all region sets for the given site ID
-	$query = new EntityFieldQuery();
-	// NOTE: EntityFieldQuery can't select field_eatlas_publisher_parent IS NULL
-	//   because it join tables using INNER JOIN instead of LEFT JOIN.
-	//     https://www.drupal.org/node/1226622
-	$result = $query->entityCondition('entity_type', 'node')
-		->entityCondition('bundle', EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE)
-		->fieldCondition('field_eatlas_publisher_tid', 'value', $site_tid, '=')
-		->execute();
+    // Load all region sets for the given site ID
+    $query = new EntityFieldQuery();
+    // NOTE: EntityFieldQuery can't select field_eatlas_publisher_parent IS NULL
+    //   because it join tables using INNER JOIN instead of LEFT JOIN.
+    //     https://www.drupal.org/node/1226622
+    $result = $query->entityCondition('entity_type', 'node')
+        ->entityCondition('bundle', EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE)
+        ->fieldCondition('field_eatlas_publisher_tid', 'value', $site_tid, '=')
+        ->execute();
 
-	if (isset($result['node']) && !empty($result['node'])) {
-		$nodes = node_load_multiple(array_keys($result['node']));
+    if (isset($result['node']) && !empty($result['node'])) {
+        $nodes = node_load_multiple(array_keys($result['node']));
 
-		$root_nodes = array();
-		foreach ($nodes as $node) {
-			// Get the parent NID (Drupal API really lack support for doing this)
-			$parent_nid = NULL;
-			if (property_exists($node, 'field_eatlas_publisher_parent') &&
-					!empty($node->field_eatlas_publisher_parent) &&
-					!empty($node->field_eatlas_publisher_parent[LANGUAGE_NONE]) &&
-					!empty($node->field_eatlas_publisher_parent[LANGUAGE_NONE][0]) &&
-					!empty($node->field_eatlas_publisher_parent[LANGUAGE_NONE][0]['value'])) {
-				$parent_nid = $node->field_eatlas_publisher_parent[LANGUAGE_NONE][0]['value'];
-			}
+        $root_nodes = array();
+        foreach ($nodes as $node) {
+            // Get the parent NID (Drupal API really lack support for doing this)
+            $parent_nid = NULL;
+            if (property_exists($node, 'field_eatlas_publisher_parent') &&
+                    !empty($node->field_eatlas_publisher_parent) &&
+                    !empty($node->field_eatlas_publisher_parent[LANGUAGE_NONE]) &&
+                    !empty($node->field_eatlas_publisher_parent[LANGUAGE_NONE][0]) &&
+                    !empty($node->field_eatlas_publisher_parent[LANGUAGE_NONE][0]['value'])) {
+                $parent_nid = $node->field_eatlas_publisher_parent[LANGUAGE_NONE][0]['value'];
+            }
 
-			if ($parent_nid === NULL) {
-				// If the node doesn't have a parent ID, the node is considered
-				//   a root and is added to the list.
-				$root_nodes[] = $node;
-			}
-		}
+            if ($parent_nid === NULL) {
+                // If the node doesn't have a parent ID, the node is considered
+                //   a root and is added to the list.
+                $root_nodes[] = $node;
+            }
+        }
 
-		return $root_nodes;
-	}
+        return $root_nodes;
+    }
 
-	return array();
+    return array();
 }
 
 
 function eatlas_spatial_publisher_region_set_load_children($region_set_node) {
-	if ($region_set_node === NULL) {
-		return array();
-	}
+    if ($region_set_node === NULL) {
+        return array();
+    }
 
-	$site_tid = NULL;
-	if (property_exists($region_set_node, 'field_eatlas_publisher_tid') &&
-			!empty($region_set_node->field_eatlas_publisher_tid) &&
-			!empty($region_set_node->field_eatlas_publisher_tid[LANGUAGE_NONE]) &&
-			!empty($region_set_node->field_eatlas_publisher_tid[LANGUAGE_NONE][0]) &&
-			!empty($region_set_node->field_eatlas_publisher_tid[LANGUAGE_NONE][0]['value'])) {
-		$site_tid = $region_set_node->field_eatlas_publisher_tid[LANGUAGE_NONE][0]['value'];
-	}
+    $site_tid = NULL;
+    if (property_exists($region_set_node, 'field_eatlas_publisher_tid') &&
+            !empty($region_set_node->field_eatlas_publisher_tid) &&
+            !empty($region_set_node->field_eatlas_publisher_tid[LANGUAGE_NONE]) &&
+            !empty($region_set_node->field_eatlas_publisher_tid[LANGUAGE_NONE][0]) &&
+            !empty($region_set_node->field_eatlas_publisher_tid[LANGUAGE_NONE][0]['value'])) {
+        $site_tid = $region_set_node->field_eatlas_publisher_tid[LANGUAGE_NONE][0]['value'];
+    }
 
 
-	// Load all region sets for the given site ID
-	$query = new EntityFieldQuery();
-	$result = $query->entityCondition('entity_type', 'node')
-		->entityCondition('bundle', EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE)
-		->fieldCondition('field_eatlas_publisher_tid', 'value', $site_tid, '=')
-		->execute();
+    // Load all region sets for the given site ID
+    $query = new EntityFieldQuery();
+    $result = $query->entityCondition('entity_type', 'node')
+        ->entityCondition('bundle', EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE)
+        ->fieldCondition('field_eatlas_publisher_tid', 'value', $site_tid, '=')
+        ->execute();
 
-	if (isset($result['node']) && !empty($result['node'])) {
-		$nodes = node_load_multiple(array_keys($result['node']));
+    if (isset($result['node']) && !empty($result['node'])) {
+        $nodes = node_load_multiple(array_keys($result['node']));
 
-		$child_nodes = array();
-		foreach ($nodes as $node) {
-			// Get the parent NID (Drupal API really lack support for doing this)
-			$parent_nid = NULL;
-			if (property_exists($node, 'field_eatlas_publisher_parent') &&
-					!empty($node->field_eatlas_publisher_parent) &&
-					!empty($node->field_eatlas_publisher_parent[LANGUAGE_NONE]) &&
-					!empty($node->field_eatlas_publisher_parent[LANGUAGE_NONE][0]) &&
-					!empty($node->field_eatlas_publisher_parent[LANGUAGE_NONE][0]['value'])) {
-				$parent_nid = $node->field_eatlas_publisher_parent[LANGUAGE_NONE][0]['value'];
-			}
+        $child_nodes = array();
+        foreach ($nodes as $node) {
+            // Get the parent NID (Drupal API really lack support for doing this)
+            $parent_nid = NULL;
+            if (property_exists($node, 'field_eatlas_publisher_parent') &&
+                    !empty($node->field_eatlas_publisher_parent) &&
+                    !empty($node->field_eatlas_publisher_parent[LANGUAGE_NONE]) &&
+                    !empty($node->field_eatlas_publisher_parent[LANGUAGE_NONE][0]) &&
+                    !empty($node->field_eatlas_publisher_parent[LANGUAGE_NONE][0]['value'])) {
+                $parent_nid = $node->field_eatlas_publisher_parent[LANGUAGE_NONE][0]['value'];
+            }
 
-			if ($parent_nid === $region_set_node->nid) {
-				$child_nodes[] = $node;
-			}
-		}
+            if ($parent_nid === $region_set_node->nid) {
+                $child_nodes[] = $node;
+            }
+        }
 
-		return $child_nodes;
-	}
+        return $child_nodes;
+    }
 
-	return array();
+    return array();
 }
 
 
@@ -647,8 +712,8 @@ function eatlas_spatial_publisher_region_set_load_children($region_set_node) {
  *   to use that parameter to set the site_tid dropdown value.
  */
 function _eatlas_spatial_publisher_add_region_set(stdClass $site_taxonomy_term) {
-	$site_tid = $site_taxonomy_term->tid;
-	drupal_goto('node/add/eatlas-publisher-region-set', array('query' => array('site_tid' => $site_tid)));
+    $site_tid = $site_taxonomy_term->tid;
+    drupal_goto('node/add/eatlas-publisher-region-set', array('query' => array('site_tid' => $site_tid)));
 }
 
 /**
@@ -672,16 +737,16 @@ function _eatlas_spatial_publisher_add_region_set(stdClass $site_taxonomy_term) 
  *   validation process (some solutions redirect even when the validation fails).
  */
 function eatlas_spatial_publisher_form_eatlas_publisher_region_set_node_form_alter(&$form, &$form_state, $form_id) {
-	// Set the site ID using the URL parameter
-	if (isset($_GET['site_tid']) && is_numeric($_GET['site_tid'])) {
-		$site_tid = $_GET['site_tid'];
+    // Set the site ID using the URL parameter
+    if (isset($_GET['site_tid']) && is_numeric($_GET['site_tid'])) {
+        $site_tid = $_GET['site_tid'];
 
-		if (isset($form['field_eatlas_publisher_tid'])) {
-			$form['field_eatlas_publisher_tid'][LANGUAGE_NONE]['#default_value'] = $site_tid;
-		}
-	}
+        if (isset($form['field_eatlas_publisher_tid'])) {
+            $form['field_eatlas_publisher_tid'][LANGUAGE_NONE]['#default_value'] = $site_tid;
+        }
+    }
 
-	$form['#submit'][] = '_eatlas_spatial_publisher_edit_form_submit';
+    $form['#submit'][] = '_eatlas_spatial_publisher_edit_form_submit';
 }
 /**
  * Implements hook_form_FORM_ID_alter for
@@ -693,15 +758,15 @@ function eatlas_spatial_publisher_form_eatlas_publisher_region_set_node_form_alt
  *   to the same eatlas_spatial_publisher configuration page.
  */
 function eatlas_spatial_publisher_form_node_delete_confirm_alter(&$form, &$form_state, $form_id) {
-	// Fix the cancel button
-	if (isset($form['#node'])) {
-		$node = $form['#node'];
-		if (property_exists($node, 'field_eatlas_publisher_tid')) {
-			$site_tid = $node->field_eatlas_publisher_tid[LANGUAGE_NONE][0]['value'];
-			$form['actions']['cancel']['#href'] = 'admin/config/eatlas/eatlas_spatial_publisher/' . $site_tid;
-		}
-	}
-	$form['#submit'][] = '_eatlas_spatial_publisher_delete_form_submit';
+    // Fix the cancel button
+    if (isset($form['#node'])) {
+        $node = $form['#node'];
+        if (property_exists($node, 'field_eatlas_publisher_tid')) {
+            $site_tid = $node->field_eatlas_publisher_tid[LANGUAGE_NONE][0]['value'];
+            $form['actions']['cancel']['#href'] = 'admin/config/eatlas/eatlas_spatial_publisher/' . $site_tid;
+        }
+    }
+    $form['#submit'][] = '_eatlas_spatial_publisher_delete_form_submit';
 }
 
 /**
@@ -711,11 +776,11 @@ function eatlas_spatial_publisher_form_node_delete_confirm_alter(&$form, &$form_
  *   instead of the node view page.
  */
 function _eatlas_spatial_publisher_edit_form_submit($form, &$form_state) {
-	if (isset($form_state['values']['field_eatlas_publisher_tid'])) {
-		$site_tid = $form_state['values']['field_eatlas_publisher_tid'][LANGUAGE_NONE][0]['value'];
-		// NOTE: $form_state['redirect'] can't be used here, the node module overwrites it.
-		$_GET['destination'] = 'admin/config/eatlas/eatlas_spatial_publisher/' . $site_tid;
-	}
+    if (isset($form_state['values']['field_eatlas_publisher_tid'])) {
+        $site_tid = $form_state['values']['field_eatlas_publisher_tid'][LANGUAGE_NONE][0]['value'];
+        // NOTE: $form_state['redirect'] can't be used here, the node module overwrites it.
+        $_GET['destination'] = 'admin/config/eatlas/eatlas_spatial_publisher/' . $site_tid;
+    }
 }
 
 /**
@@ -725,13 +790,13 @@ function _eatlas_spatial_publisher_edit_form_submit($form, &$form_state) {
  *   instead of the site home page.
  */
 function _eatlas_spatial_publisher_delete_form_submit($form, &$form_state) {
-	if (isset($form['#node'])) {
-		$node = $form['#node'];
-		if (property_exists($node, 'field_eatlas_publisher_tid')) {
-			$site_tid = $node->field_eatlas_publisher_tid[LANGUAGE_NONE][0]['value'];
-			$form_state['redirect'] = 'admin/config/eatlas/eatlas_spatial_publisher/' . $site_tid;
-		}
-	}
+    if (isset($form['#node'])) {
+        $node = $form['#node'];
+        if (property_exists($node, 'field_eatlas_publisher_tid')) {
+            $site_tid = $node->field_eatlas_publisher_tid[LANGUAGE_NONE][0]['value'];
+            $form_state['redirect'] = 'admin/config/eatlas/eatlas_spatial_publisher/' . $site_tid;
+        }
+    }
 }
 
 /**
@@ -740,9 +805,9 @@ function _eatlas_spatial_publisher_delete_form_submit($form, &$form_state) {
  * See: https://api.drupal.org/api/drupal/modules!node!node.api.php/function/hook_node_insert/7.x
  */
 function eatlas_spatial_publisher_node_insert($node) {
-	if ($node->type === EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE) {
-		eatlas_spatial_publisher_regions_save($node);
-	}
+    if ($node->type === EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE) {
+        eatlas_spatial_publisher_regions_save($node);
+    }
 }
 
 /**
@@ -751,9 +816,9 @@ function eatlas_spatial_publisher_node_insert($node) {
  * See: https://api.drupal.org/api/drupal/modules!node!node.api.php/function/hook_node_update/7.x
  */
 function eatlas_spatial_publisher_node_update($node) {
-	if ($node->type === EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE) {
-		eatlas_spatial_publisher_regions_save($node);
-	}
+    if ($node->type === EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE) {
+        eatlas_spatial_publisher_regions_save($node);
+    }
 }
 
 /**
@@ -762,24 +827,24 @@ function eatlas_spatial_publisher_node_update($node) {
  * See: https://api.drupal.org/api/drupal/modules!node!node.api.php/function/hook_node_delete/7.x
  */
 function eatlas_spatial_publisher_node_delete($node) {
-	if ($node->type === EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE) {
-		cache_clear_all(EATLAS_SPATIAL_PUBLISHER_NODE_CACHE_PREFIX . $node->nid, 'cache');
+    if ($node->type === EATLAS_SPATIAL_PUBLISHER_CONTENT_TYPE) {
+        cache_clear_all(EATLAS_SPATIAL_PUBLISHER_NODE_CACHE_PREFIX . $node->nid, 'cache');
 
-		$geojson_file_id = _eatlas_spatial_publisher_region_get_fid($node, 'field_eatlas_publisher_geojson');
-		cache_clear_all(EATLAS_SPATIAL_PUBLISHER_FILE_CACHE_PREFIX . $geojson_file_id, 'cache');
+        $geojson_file_id = _eatlas_spatial_publisher_region_get_fid($node, 'field_eatlas_publisher_geojson');
+        cache_clear_all(EATLAS_SPATIAL_PUBLISHER_FILE_CACHE_PREFIX . $geojson_file_id, 'cache');
 
-		$csv_file_id = _eatlas_spatial_publisher_region_get_fid($node, 'field_eatlas_publisher_csv');
-		cache_clear_all(EATLAS_SPATIAL_PUBLISHER_FILE_CACHE_PREFIX . $csv_file_id, 'cache');
+        $csv_file_id = _eatlas_spatial_publisher_region_get_fid($node, 'field_eatlas_publisher_csv');
+        cache_clear_all(EATLAS_SPATIAL_PUBLISHER_FILE_CACHE_PREFIX . $csv_file_id, 'cache');
 
-		$region_terms = eatlas_spatial_publisher_region_load_terms($node->nid);
+        $region_terms = eatlas_spatial_publisher_region_load_terms($node->nid);
 
-		// Delete all the region terms
-		if (!empty($region_terms)) {
-			foreach ($region_terms as $region_term) {
-				eatlas_spatial_publisher_delete_taxonomy_term($region_term->tid);
-			}
-		}
-	}
+        // Delete all the region terms
+        if (!empty($region_terms)) {
+            foreach ($region_terms as $region_term) {
+                eatlas_spatial_publisher_delete_taxonomy_term($region_term->tid);
+            }
+        }
+    }
 }
 
 ?>
