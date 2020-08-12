@@ -4,6 +4,16 @@
  *   http://watershedreports.wwf.ca/#canada/by/threat-overall/profile
  */
 
+// Patch for Internet Explorer...
+// Inspired from:
+//   https://stackoverflow.com/questions/26482645/number-isintegerx-which-is-created-can-not-work-in-ie#answer-26482951
+function isInteger(num) {
+    if (typeof(Number.isInteger) === "function") {
+        return Number.isInteger(num);
+    }
+    return (num ^ 0) === num;
+}
+
 // TODO Config example
 // TODO Write documentation: setPanelContent, loadPanelContent
 // TODO Write documentation: loadStateCallback(state)
@@ -116,7 +126,9 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
     //   but the window object. It needs to be triggered manually.
     this.map_container_el.resize(function (that) {
         return function () {
-            that.olMap.updateSize();
+            if (that.olMap) {
+                that.olMap.updateSize();
+            }
 
             // Also trigger the resize 200ms after the action,
             //   to fix the "mouse over" offset issue.
@@ -124,7 +136,9 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
                 window.clearTimeout(that.delayedMapResize);
             }
             that.delayedMapResize = window.setTimeout(function() {
-                that.olMap.updateSize();
+                if (that.olMap) {
+                    that.olMap.updateSize();
+                }
                 that.delayedMapResize = null;
             }, 200);
         };
@@ -360,7 +374,7 @@ EAtlasSpatialPublisherMap.prototype.init = function() {
     };
 
     if (this.config.maxZoom) {
-        if (Number.isInteger(this.config.maxZoom) && this.config.maxZoom > 0) {
+        if (isInteger(this.config.maxZoom) && this.config.maxZoom > 0) {
             viewConfig.maxZoom = this.config.maxZoom;
         } else {
             console.log("Invalid maximum zoom level: " + this.config.maxZoom + ". Expected positive integer number");
