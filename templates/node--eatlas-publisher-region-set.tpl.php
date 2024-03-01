@@ -78,7 +78,7 @@ if ($feature_id) {
                     <?php print $template_content; ?>
                 </div>
                 <div class="goto-top">
-                    <a class="goto-top-button" href="#content-top"><img src="<?php print $eatlas_spatial_publisher_path; ?>/img/top-arrow.svg" style="display: block; margin: 0 auto;">TOP</a>
+                    <a class="goto-top-button" href="#content-top"><img src="/<?php print $eatlas_spatial_publisher_path; ?>/img/top-arrow.svg" style="display: block; margin: 0 auto;">TOP</a>
                 </div>
             </div>
         </div>
