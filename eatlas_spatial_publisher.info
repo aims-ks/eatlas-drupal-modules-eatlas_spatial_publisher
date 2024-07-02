@@ -15,9 +15,9 @@ scripts[] = ../../../libraries/openlayers/ol.js
 
 ; NOTE: OpenLayers require PolyFill added to the page header in order to work on broken web browsers (such as IE)
 ;   Add the following line to your "html.tpl.php"
-;   <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
+;   <script src="https://cdnjs.cloudflare.com/polyfill/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
 
-; https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL
+; https://cdnjs.cloudflare.com/polyfill/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL
 
 package = eAtlas
 
