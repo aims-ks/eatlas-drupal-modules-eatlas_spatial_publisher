@@ -13,12 +13,6 @@ scripts[] = js/eAtlas_spatial_publisher_back_to_top_button.js
 stylesheets[all][] = ../../../libraries/openlayers/ol.css
 scripts[] = ../../../libraries/openlayers/ol.js
 
-; NOTE: OpenLayers require PolyFill added to the page header in order to work on broken web browsers (such as IE)
-;   Add the following line to your "html.tpl.php"
-;   <script src="https://cdnjs.cloudflare.com/polyfill/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
-
-; https://cdnjs.cloudflare.com/polyfill/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL
-
 package = eAtlas
 
 configure = admin/config/eatlas/eatlas_spatial_publisher
